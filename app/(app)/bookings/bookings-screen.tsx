@@ -70,9 +70,9 @@ function TripCard({ state, booking }: { state: DemoState; booking: Booking }) {
 
   return (
     <li className={`${cardClass} p-0`}>
-      <Link href={`/tables/${table.id}`} className={`flex gap-4 rounded-2xl p-4 ${focusRing}`}>
-        <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-ivory/5">
-          <Image src={table.photos[0]} alt="" fill sizes="80px" className="object-cover" />
+      <Link href={`/tables/${table.id}`} className={`flex gap-4 rounded-2xl p-4 md:flex-col ${focusRing}`}>
+        <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-ivory/5 md:aspect-[16/9] md:size-auto md:w-full">
+          <Image src={table.photos[0]} alt="" fill sizes="(min-width: 768px) 480px, 80px" className="object-cover" />
         </div>
         <div className="min-w-0">
           <StatusChip status={booking.status} />
@@ -177,7 +177,7 @@ export function BookingsScreen() {
                   {upcoming.length === 0 ? (
                     <p className="mt-3 text-ivory/65">Nothing coming up.</p>
                   ) : (
-                    <ul className="mt-3 space-y-4">
+                    <ul className="mt-3 space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-6 md:space-y-0">
                       {upcoming.map(({ booking }) => <TripCard key={booking.id} state={state} booking={booking} />)}
                     </ul>
                   )}
@@ -185,7 +185,7 @@ export function BookingsScreen() {
                 {past.length > 0 && (
                   <section>
                     <h2 className="text-sm tracking-[0.15em] text-ivory/55 uppercase">Past and cancelled</h2>
-                    <ul className="mt-3 space-y-4">
+                    <ul className="mt-3 space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-6 md:space-y-0">
                       {past.map(({ booking }) => <TripCard key={booking.id} state={state} booking={booking} />)}
                     </ul>
                   </section>

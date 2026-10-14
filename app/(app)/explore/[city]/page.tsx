@@ -26,12 +26,15 @@ export default async function CityPage({
   return (
     <div className="min-h-dvh bg-pine text-ivory">
       <SiteHeader current="experiences" />
-      <main className="mx-auto max-w-4xl px-4 pt-4 pb-16 md:px-10 md:pt-10 md:pb-24">
-        <BackLink href="/explore">India map</BackLink>
+      <main className="mx-auto max-w-4xl px-4 pt-4 pb-16 md:max-w-7xl md:px-10 md:pt-2 md:pb-24">
+        <div className="md:hidden">
+          <BackLink href="/explore">India map</BackLink>
+        </div>
 
-        {/* Switch city without going back to the map. */}
-        <nav aria-label="Cities" className="no-scrollbar -mx-4 mt-2 overflow-x-auto px-4">
-          <ul className="flex w-max gap-2">
+        {/* Switch city without going back to the map. On wider screens
+            these become Airbnb's row of category tabs. */}
+        <nav aria-label="Cities" className="no-scrollbar -mx-4 mt-2 overflow-x-auto px-4 md:mx-0 md:mt-0 md:border-b md:border-ivory/10 md:px-0">
+          <ul className="flex w-max gap-2 md:w-full md:justify-center md:gap-10">
             {exploreCities.map((option) => {
               const isCurrent = option.id === city.id;
               return (
@@ -39,11 +42,13 @@ export default async function CityPage({
                   <Link
                     href={`/explore/${option.id}`}
                     aria-current={isCurrent ? "page" : undefined}
-                    className={`flex h-10 items-center gap-2 rounded-full border py-1 pr-4 pl-1 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ivory ${
-                      isCurrent ? "border-[#e8c08f] bg-[#e8c08f]/15 text-[#e8c08f]" : "border-ivory/20 text-ivory/75"
+                    className={`flex h-10 items-center gap-2 rounded-full border py-1 pr-4 pl-1 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ivory md:h-auto md:flex-col md:gap-1.5 md:rounded-none md:border-x-0 md:border-t-0 md:border-b-2 md:bg-transparent md:px-1 md:pt-4 md:pb-3 md:text-xs md:font-medium ${
+                      isCurrent
+                        ? "border-[#e8c08f] bg-[#e8c08f]/15 text-[#e8c08f] md:border-ivory md:text-ivory"
+                        : "border-ivory/20 text-ivory/75 md:border-transparent md:text-ivory/60 md:opacity-80 md:hover:border-ivory/30 md:hover:text-ivory md:hover:opacity-100"
                     }`}
                   >
-                    <Image src={option.thumbnail} alt="" sizes="32px" className="size-8 rounded-full object-cover" />
+                    <Image src={option.thumbnail} alt="" sizes="40px" className="size-8 rounded-full object-cover md:size-9" />
                     {option.name}
                   </Link>
                 </li>
@@ -52,7 +57,7 @@ export default async function CityPage({
           </ul>
         </nav>
 
-        <header className="mt-4 flex items-center gap-4 md:mt-6 md:gap-5">
+        <header className="mt-4 flex items-center gap-4 md:mt-10 md:gap-5">
           <Image
             src={city.thumbnail}
             alt=""

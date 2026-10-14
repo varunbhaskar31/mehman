@@ -3,11 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { AccountButton } from "@/app/_components/account-button";
 import { useOpenCity } from "@/app/_components/city-transition";
-import { ModeSwitchLink } from "@/app/_components/mode-switch-link";
 import { NotificationBell } from "@/app/_components/notification-bell";
 import { MehmanLogo } from "@/app/_components/mehman-logo";
+import { SiteHeader } from "@/app/_components/site-header";
 import exploreScene from "@/assets/explore-scene.jpg";
 import {
   defaultExploreCity,
@@ -22,13 +21,6 @@ const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ivory";
 
 const LOCATE = "__locate";
-
-const navLinks = [
-  { href: "/explore", label: "Explore", current: true },
-  { href: "/experiences", label: "Experiences" },
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/our-story", label: "Our story" },
-];
 
 function PinIcon({ className }: { className?: string }) {
   return (
@@ -152,6 +144,11 @@ export function ExploreScreen() {
 
   return (
     <div className="explore-page">
+      {/* Wider screens share the website header; phones keep the logo,
+          city pill and bell laid over the artwork. */}
+      <div className="hidden md:block">
+        <SiteHeader current="explore" />
+      </div>
       <header className="explore-header">
         <Link
           href="/"
@@ -161,25 +158,6 @@ export function ExploreScreen() {
           <MehmanLogo className="h-full w-auto" />
         </Link>
 
-        <nav aria-label="Main" className="explore-nav">
-          <ul>
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  aria-current={link.current ? "page" : undefined}
-                  className={`rounded text-ivory/90 hover:text-ivory ${focusRing}`}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-            <li>
-              <ModeSwitchLink className={`rounded text-ivory/90 hover:text-ivory ${focusRing}`} />
-            </li>
-          </ul>
-        </nav>
-
         <div className="explore-header-end">
           <div className="explore-city-pill relative has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-4 has-[select:focus-visible]:outline-ivory">
             <PinIcon className="size-4 shrink-0" />
@@ -187,14 +165,7 @@ export function ExploreScreen() {
             <ChevronIcon className="size-4 shrink-0 opacity-80" />
             <CitySelect city={city} label="Dining city" onChange={changeCity} />
           </div>
-          <span className="md:hidden">
-            <NotificationBell />
-          </span>
-          {/* Phones reach these through the bottom tabs. */}
-          <div className="explore-header-account">
-            <NotificationBell />
-            <AccountButton />
-          </div>
+          <NotificationBell />
         </div>
       </header>
 

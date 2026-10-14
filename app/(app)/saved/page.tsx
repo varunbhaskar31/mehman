@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 export default function SavedPage() {
   return (
     <div className="min-h-dvh bg-pine text-ivory">
-      <SiteHeader />
-      <main className="mx-auto max-w-4xl px-4 pt-6 pb-16 md:px-10 md:pt-10">
+      <SiteHeader current="saved" />
+      <main className="mx-auto max-w-4xl px-4 pt-6 pb-16 md:max-w-7xl md:px-10 md:pt-10 md:pb-24">
         <SavedScreen />
       </main>
     </div>

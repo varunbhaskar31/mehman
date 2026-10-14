@@ -11,7 +11,6 @@ import {
   useDemoReady,
   useDemoState,
 } from "@/lib/demo/store";
-import type { Profile } from "@/lib/demo/types";
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ivory";
@@ -22,37 +21,17 @@ function initials(name: string, email: string) {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
 }
 
-// "Log in" for visitors; once signed in, the visitor's initials open a
-// menu with bookings, saved tables, updates, profile and hosting.
+type MenuItem = { href: string; label: string; strong?: boolean };
+
+// Desktop only, like Airbnb's: a rounded ☰ + avatar button that opens
+// everything personal. (Phones use the bottom tabs instead.)
 export function AccountButton() {
   const ready = useDemoReady();
-  const user = currentUser(useDemoState());
-
-  if (!ready) return <span aria-hidden="true" className="block size-11" />;
-
-  if (!user) {
-    return (
-      <Link
-        href="/login"
-        className={`inline-flex h-11 items-center whitespace-nowrap rounded-full border border-ivory/75 px-4 text-sm text-ivory transition-colors hover:bg-ivory/10 ${focusRing}`}
-      >
-        Log in
-      </Link>
-    );
-  }
-
-  return <AccountMenu user={user} />;
-}
-
-// Desktop: the avatar opens a menu with everything personal, like
-// Airbnb's. (Phones use the bottom tabs and don't show this button.)
-function AccountMenu({ user }: { user: Profile }) {
   const state = useDemoState();
+  const user = currentUser(state);
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const isHost = Boolean(hostForUser(state, user.id));
-  const unread = myNotifications(state).filter((n) => !n.read).length;
 
   useEffect(() => {
     if (!open) return;
@@ -69,15 +48,35 @@ function AccountMenu({ user }: { user: Profile }) {
     };
   }, [open]);
 
-  const items = [
-    { href: "/bookings", label: "My bookings" },
-    { href: "/saved", label: "Saved" },
-    { href: "/updates", label: unread ? `Updates (${unread} new)` : "Updates" },
-    { href: "/profile", label: "Profile" },
-    user.role === "admin"
-      ? { href: "/admin", label: "Open team console" }
-      : { href: isHost ? "/host" : "/become-a-host", label: isHost ? "Switch to hosting" : "Become a host" },
+  if (!ready) return <span aria-hidden="true" className="block h-12 w-20" />;
+
+  const isHost = Boolean(user && hostForUser(state, user.id));
+  const unread = user ? myNotifications(state).filter((n) => !n.read).length : 0;
+  const about: MenuItem[] = [
+    { href: "/how-it-works", label: "How Mehman works" },
+    { href: "/our-story", label: "Our story" },
+    { href: "mailto:hello@mehman.in", label: "Get help" },
   ];
+  const groups: MenuItem[][] = user
+    ? [
+        [
+          { href: "/bookings", label: "My bookings", strong: true },
+          { href: "/saved", label: "Saved", strong: true },
+          { href: "/updates", label: unread ? `Updates (${unread} new)` : "Updates", strong: true },
+          { href: "/profile", label: "Profile", strong: true },
+        ],
+        [
+          user.role === "admin"
+            ? { href: "/admin", label: "Open team console" }
+            : { href: isHost ? "/host" : "/become-a-host", label: isHost ? "Switch to hosting" : "Become a host" },
+        ],
+        about,
+      ]
+    : [
+        [{ href: "/login", label: "Log in or sign up", strong: true }],
+        [{ href: "/become-a-host", label: "Become a host" }],
+        about,
+      ];
 
   return (
     <div ref={rootRef} className="relative">
@@ -85,38 +84,57 @@ function AccountMenu({ user }: { user: Profile }) {
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Menu for ${user.fullName || user.email}`}
+        aria-label={user ? `Menu for ${user.fullName || user.email}` : "Menu"}
         onClick={() => setOpen((o) => !o)}
-        className={`grid size-11 place-items-center rounded-full bg-[#e8c08f] font-medium text-pine ${focusRing}`}
+        className={`relative flex h-12 items-center gap-3 rounded-full border border-ivory/20 py-1 pr-1 pl-3.5 transition-shadow hover:shadow-[0_2px_10px_rgb(0_0_0/0.45)] ${focusRing} ${open ? "shadow-[0_2px_10px_rgb(0_0_0/0.45)]" : ""}`}
       >
-        {initials(user.fullName, user.email)}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" className="size-4 text-ivory">
+          <path d="M3 6h18M3 12h18M3 18h18" />
+        </svg>
+        {user ? (
+          <span className="grid size-9 place-items-center rounded-full bg-[#e8c08f] text-sm font-medium text-pine">
+            {initials(user.fullName, user.email)}
+          </span>
+        ) : (
+          <svg viewBox="0 0 32 32" aria-hidden="true" className="size-9 text-ivory/60">
+            <circle cx="16" cy="16" r="16" fill="currentColor" />
+            <circle cx="16" cy="12.5" r="5" fill="#142116" />
+            <path d="M6.5 26.5c2-4.5 5.5-6.5 9.5-6.5s7.5 2 9.5 6.5" fill="#142116" />
+          </svg>
+        )}
+        {unread > 0 && <span aria-hidden="true" className="absolute top-1 right-1 size-2.5 rounded-full border-2 border-pine bg-terracotta" />}
       </button>
       {open && (
-        <div role="menu" className="absolute top-full right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-ivory/10 bg-[#1b2a1c] py-2 shadow-2xl">
-          <p className="truncate px-4 pt-1 pb-2 text-xs text-ivory/50">{user.fullName || user.email}</p>
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className="block px-4 py-2.5 text-sm text-ivory hover:bg-ivory/10 focus-visible:bg-ivory/10 focus-visible:outline-none"
-            >
-              {item.label}
-            </Link>
+        <div role="menu" className="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-ivory/10 bg-[#1b2a1c] py-2 shadow-[0_8px_28px_rgb(0_0_0/0.55)]">
+          {groups.map((items, index) => (
+            <div key={index} className={index > 0 ? "mt-2 border-t border-ivory/10 pt-2" : ""}>
+              {items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  className={`block px-4 py-2.5 text-sm hover:bg-ivory/10 focus-visible:bg-ivory/10 focus-visible:outline-none ${item.strong ? "font-medium text-ivory" : "text-ivory/80"}`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           ))}
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              signOut();
-              router.replace("/explore");
-            }}
-            className="mt-1 block w-full border-t border-ivory/10 px-4 py-2.5 text-left text-sm text-ivory/75 hover:bg-ivory/10 focus-visible:bg-ivory/10 focus-visible:outline-none"
-          >
-            Log out
-          </button>
+          {user && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                signOut();
+                router.replace("/explore");
+              }}
+              className="mt-2 block w-full border-t border-ivory/10 px-4 pt-3 pb-2.5 text-left text-sm text-ivory/80 hover:bg-ivory/10 focus-visible:bg-ivory/10 focus-visible:outline-none"
+            >
+              Log out
+            </button>
+          )}
         </div>
       )}
     </div>

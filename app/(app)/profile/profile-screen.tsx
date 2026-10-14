@@ -13,6 +13,7 @@ import {
 } from "@/app/_components/app-ui";
 import { primaryButtonClass, TextField } from "@/app/_components/fields";
 import { MehmanLogo } from "@/app/_components/mehman-logo";
+import { navIcons } from "@/app/_components/nav-icons";
 import {
   currentUser,
   homeFor,
@@ -26,21 +27,23 @@ import {
 } from "@/lib/demo/store";
 import type { Profile } from "@/lib/demo/types";
 
-type Row = { href: string; label: string; detail?: string };
+type Row = { href: string; label: string; detail?: string; icon?: string };
 
 function RowList({ title, rows }: { title?: string; rows: Row[] }) {
   return (
     <section>
-      {title && <h2 className="mb-2 text-sm tracking-[0.15em] text-ivory/55 uppercase">{title}</h2>}
-      <ul className={`${cardClass} divide-y divide-ivory/10 p-0`}>
+      {title && <h2 className="mb-2 text-sm tracking-[0.15em] text-ivory/55 uppercase md:mb-4">{title}</h2>}
+      {/* Phones: a settings list. Wider screens: Airbnb's account tiles. */}
+      <ul className={`${cardClass} divide-y divide-ivory/10 p-0 md:grid md:grid-cols-3 md:p-0 md:gap-4 md:divide-y-0 md:bg-transparent`}>
         {rows.map((row) => (
           <li key={row.href + row.label}>
-            <Link href={row.href} className={`flex items-center justify-between gap-3 rounded-2xl px-5 py-4 ${focusRing}`}>
+            <Link href={row.href} className={`flex items-center justify-between gap-3 rounded-2xl px-5 py-4 md:h-full md:flex-col md:items-start md:justify-start md:gap-6 md:p-5 md:shadow-[0_4px_16px_rgb(0_0_0/0.35)] md:ring-1 md:ring-ivory/10 md:transition-colors md:hover:bg-ivory/[0.05] ${focusRing}`}>
+              {row.icon && <span className="hidden text-[#e8c08f] md:block">{navIcons[row.icon]}</span>}
               <span>
-                <span className="block">{row.label}</span>
-                {row.detail && <span className="block text-sm text-ivory/55">{row.detail}</span>}
+                <span className="block md:font-medium">{row.label}</span>
+                {row.detail && <span className="block text-sm text-ivory/55 md:mt-1">{row.detail}</span>}
               </span>
-              <span aria-hidden="true" className="text-ivory/45">›</span>
+              <span aria-hidden="true" className="text-ivory/45 md:hidden">›</span>
             </Link>
           </li>
         ))}
@@ -50,9 +53,9 @@ function RowList({ title, rows }: { title?: string; rows: Row[] }) {
 }
 
 const infoRows: Row[] = [
-  { href: "/how-it-works", label: "How Mehman works" },
-  { href: "/our-story", label: "Our story" },
-  { href: "mailto:hello@mehman.in", label: "Get help", detail: "hello@mehman.in" },
+  { href: "/how-it-works", label: "How Mehman works", icon: "explore" },
+  { href: "/our-story", label: "Our story", icon: "experiences" },
+  { href: "mailto:hello@mehman.in", label: "Get help", detail: "hello@mehman.in", icon: "requests" },
 ];
 
 function PersonalInfo({ user }: { user: Profile }) {
@@ -220,19 +223,22 @@ export function ProfileScreen() {
             </span>
             <div className="min-w-0">
               <p className="text-xs tracking-[0.2em] text-terracotta-soft uppercase">Profile</p>
-              <h1 className="truncate font-serif text-3xl">{me.fullName || "Welcome"}</h1>
+              <h1 className="truncate font-serif text-3xl md:text-4xl">{me.fullName || "Welcome"}</h1>
+              <p className="hidden truncate text-ivory/60 md:block">{[me.email, me.phone].filter(Boolean).join(" · ")}</p>
             </div>
           </div>
 
           <RowList
             rows={[
-              { href: "/bookings", label: "My bookings", detail: "Seats you've requested and meals you've had" },
-              { href: "/saved", label: "Saved", detail: "Tables you bookmarked" },
-              { href: "/updates", label: "Updates", detail: "Replies from hosts and reminders" },
+              { href: "/bookings", label: "My bookings", detail: "Seats you've requested and meals you've had", icon: "trips" },
+              { href: "/saved", label: "Saved", detail: "Tables you bookmarked", icon: "saved" },
+              { href: "/updates", label: "Updates", detail: "Replies from hosts and reminders", icon: "today" },
             ]}
           />
-          <HostingCard user={me} />
-          <PersonalInfo key={me.id} user={me} />
+          <div className="space-y-6 md:grid md:grid-cols-2 md:items-start md:gap-6 md:space-y-0">
+            <HostingCard user={me} />
+            <PersonalInfo key={me.id} user={me} />
+          </div>
           <RowList title="About Mehman" rows={infoRows} />
           <button
             type="button"
