@@ -25,7 +25,7 @@ export default function WelcomePage() {
           <WelcomeScene />
         </div>
       </div>
-      {/* Laptops and desktops: the courtyard feast beside the kitchen. */}
+      {/* Laptops and desktops: the courtyard feast fills the window. */}
       <WelcomeDesktop />
     </main>
   );

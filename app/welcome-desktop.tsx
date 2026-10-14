@@ -1,60 +1,121 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import courtyard from "@/assets/welcome-desktop.jpg";
+
+const ENTER_DURATION_MS = 700;
 
 // Lamp flames in the 1672×941 painting, as % of its width and height.
 const lamps = [
-  { x: 22.6, y: 3.4, size: 9 },
-  { x: 28.1, y: 9.6, size: 6 },
-  { x: 57.1, y: 19.9, size: 6 },
-  { x: 85.6, y: 17.7, size: 6 },
-  { x: 91.8, y: 34.7, size: 5 },
-  { x: 2.1, y: 84.5, size: 8 },
+  { x: 50.78, y: 9.35, size: 9 },
+  { x: 59.33, y: 31.46, size: 4.5 },
+  { x: 69.56, y: 30.6, size: 4.5 },
+  { x: 88.1, y: 29.76, size: 4.5 },
+  { x: 96.59, y: 38.15, size: 4 },
+  { x: 8.67, y: 79.4, size: 6 },
 ];
 
+function Leaves({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 60 40" aria-hidden="true" className={className}>
+      <g fill="#c4532c">
+        <path d="M30 38C22 28 23 12 30 2c7 10 8 26 0 36Z" />
+        <path d="M27 38C16 36 6 26 4 12c11 3 20 13 23 26Z" />
+        <path d="M33 38c11-2 21-12 23-26-11 3-20 13-23 26Z" />
+      </g>
+    </svg>
+  );
+}
+
 /**
- * Wide screens: the kitchen painting (with its own "Step inside") stands on
- * the left, and this panel tells the rest of the story on the right: the
- * meal she cooked, shared with family and guests in the courtyard. Both sit
- * on a blurred wash of the courtyard's lamplight. Phones show only the
- * kitchen painting.
+ * Laptops and desktops: the courtyard feast fills the window, with the
+ * words and buttons laid out as in the design. The painting may crop at
+ * the edges; the words are anchored to the window, so they never do.
+ * Phones keep the kitchen painting (see page.tsx).
  */
 export function WelcomeDesktop() {
+  const router = useRouter();
+  const [entering, setEntering] = useState(false);
+  const timer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timer.current) window.clearTimeout(timer.current);
+      // Next keeps this page mounted while hidden; start fresh on return.
+      setEntering(false);
+    },
+    [],
+  );
+
+  function stepInside(event: MouseEvent<HTMLAnchorElement>) {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    event.preventDefault();
+    if (entering) return;
+    setEntering(true);
+    timer.current = window.setTimeout(() => router.push("/explore"), ENTER_DURATION_MS);
+  }
+
   return (
-    <>
-      <Image src={courtyard} alt="" fill sizes="20vw" quality={40} className="welcome-desk-glow" />
-      <section aria-label="The meal, shared" className="welcome-desk">
-        <p className="welcome-desk-kicker">From her kitchen to your table</p>
-        <div className="welcome-desk-art">
-          <Image
-            src={courtyard}
-            alt="A family feast in a lantern-lit courtyard: a woman in a cream sari serves guests at a long wooden table laden with dishes, grandparents laugh, children run and play, and a dog naps on the rug."
-            fill
-            sizes="(min-width: 1600px) 760px, 50vw"
-            className="object-cover"
+    <div className="welcome-hero">
+      <div className="welcome-hero-art">
+        <Image
+          src={courtyard}
+          alt="A family feast in a lantern-lit courtyard: a woman in a cream sari serves guests at a long wooden table laden with dishes, grandparents laugh, children run and play, and a dog naps on the rug."
+          fill
+          preload
+          sizes="(min-width: 1672px) 100vw, 1672px"
+          className="object-cover"
+        />
+        {lamps.map((lamp) => (
+          <span
+            key={`${lamp.x}-${lamp.y}`}
+            aria-hidden="true"
+            className="welcome-hero-lamp"
+            style={{ left: `${lamp.x}%`, top: `${lamp.y}%`, width: `${lamp.size}%` }}
           />
-          {lamps.map((lamp) => (
-            <span
-              key={`${lamp.x}-${lamp.y}`}
-              aria-hidden="true"
-              className="welcome-desk-lamp"
-              style={{ left: `${lamp.x}%`, top: `${lamp.y}%`, width: `${lamp.size}%` }}
-            />
-          ))}
-        </div>
-        <div className="welcome-desk-copy">
-          <p className="font-serif text-[clamp(1.75rem,2.4vw,2.5rem)] leading-tight">Come, food&rsquo;s ready.</p>
-          <p className="mt-3 max-w-xl text-[17px] leading-relaxed text-ivory/80">
-            Every meal on Mehman starts in a family&rsquo;s kitchen and ends around their table. Pull up a chair, from Kochi to Kolkata, and eat with the people who cooked it.
-          </p>
-          <Link
-            href="/how-it-works"
-            className="mt-5 inline-block rounded text-[15px] text-ivory/85 underline decoration-ivory/40 underline-offset-[6px] hover:text-ivory hover:decoration-ivory focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ivory"
-          >
-            How Mehman works
-          </Link>
-        </div>
-      </section>
-    </>
+        ))}
+      </div>
+
+      <Link href="/" className="welcome-hero-logo" aria-label="Mehman home">
+        <Leaves className="welcome-hero-leaves" />
+        <span className="welcome-hero-wordmark">Mehman</span>
+        <span className="welcome-hero-tagline">People · Food · Cultures</span>
+      </Link>
+
+      <nav aria-label="Main" className="welcome-hero-nav">
+        <Link href="/explore">Explore</Link>
+        <Link href="/become-a-host">Become a Host</Link>
+      </nav>
+
+      <div className="welcome-hero-copy">
+        <h1 className="welcome-hero-title">
+          Come hungry.
+          <br />
+          Leave with stories.
+        </h1>
+        <p className="welcome-hero-lede">
+          Authentic home dining experiences
+          <br />
+          across India, right where you are.
+        </p>
+        <Link href="/explore" onClick={stepInside} className="welcome-hero-cta">
+          Step inside
+          <span aria-hidden="true">→</span>
+        </Link>
+      </div>
+      <div aria-hidden="true" className="welcome-hero-veil" data-active={entering ? "" : undefined} />
+    </div>
   );
 }
