@@ -390,6 +390,40 @@ export function reviewHost(hostId: string, approve: boolean, note: string): Resu
   return { ok: true, value: undefined };
 }
 
+// The Mehman team can take a live table off Explore (and put it back),
+// for example after a complaint.
+export function adminSetTablePaused(tableId: string, paused: boolean): Result {
+  const s = getState();
+  if (currentUser(s)?.role !== "admin") return fail("Only the Mehman team can do this.");
+  const table = s.tables.find((t) => t.id === tableId);
+  if (!table || (paused ? table.status !== "approved" : table.status !== "paused")) {
+    return fail("That table can't be changed right now.");
+  }
+  const host = s.hosts.find((h) => h.id === table.hostId)!;
+  setState((current) =>
+    notify(
+      {
+        ...current,
+        tables: current.tables.map((t) => (t.id === tableId ? { ...t, status: paused ? "paused" : "approved" } : t)),
+      },
+      host.userId,
+      paused ? "Mehman paused your table" : "Your table is live again",
+      paused ? "We'll be in touch about why." : "Guests can book it again.",
+      "/host/table",
+    ),
+  );
+  return { ok: true, value: undefined };
+}
+
+// Where each kind of person starts: hosts in hosting mode, the team in
+// its console, everyone else on Explore.
+export function homeFor(s: DemoState, userId: string) {
+  const profile = s.profiles.find((p) => p.id === userId);
+  if (profile?.role === "admin") return "/admin";
+  if (hostForUser(s, userId)) return "/host";
+  return "/explore";
+}
+
 // Re-checks a live host's table after they change its price or photos.
 export function reviewTableChanges(tableId: string, approve: boolean, note: string): Result {
   const s = getState();

@@ -74,8 +74,9 @@ function AccountMenu({ user }: { user: Profile }) {
     { href: "/saved", label: "Saved" },
     { href: "/updates", label: unread ? `Updates (${unread} new)` : "Updates" },
     { href: "/profile", label: "Profile" },
-    { href: isHost ? "/host" : "/become-a-host", label: isHost ? "Switch to hosting" : "Become a host" },
-    ...(user.role === "admin" ? [{ href: "/admin", label: "Review hosts" }] : []),
+    user.role === "admin"
+      ? { href: "/admin", label: "Open team console" }
+      : { href: isHost ? "/host" : "/become-a-host", label: isHost ? "Switch to hosting" : "Become a host" },
   ];
 
   return (

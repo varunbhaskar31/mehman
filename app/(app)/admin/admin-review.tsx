@@ -130,48 +130,54 @@ export function AdminReview() {
     <RequireUser role="admin">
       {() => {
         const pending = state.hosts.filter((h) => h.status === "pending");
-        const reviewed = state.hosts.filter((h) => h.status !== "pending");
+        const changes = state.tables.filter(
+          (t) => t.status === "pending" && state.hosts.find((h) => h.id === t.hostId)?.status === "approved",
+        );
+        const live = state.tables.filter((t) => t.status === "approved").length;
+        const waitingBookings = state.bookings.filter((b) => b.status === "requested").length;
+        const stats = [
+          { label: "new hosts", value: pending.length },
+          { label: "changes", value: changes.length },
+          { label: "live tables", value: live },
+          { label: "awaiting hosts", value: waitingBookings },
+        ];
         return (
           <div className="space-y-8">
-            <PageTitle kicker="Mehman team" title="Review new hosts">
-              Check every home before it goes live. Approving publishes the host&rsquo;s table to their city page.
-            </PageTitle>
-            {pending.length === 0 ? (
-              <p className={`${cardClass} text-ivory/70`}>No applications waiting. 🎉</p>
-            ) : (
-              <ul className="space-y-6">{pending.map((h) => <Application key={h.id} state={state} host={h} />)}</ul>
-            )}
-            {(() => {
-              const changes = state.tables.filter(
-                (t) => t.status === "pending" && state.hosts.find((h) => h.id === t.hostId)?.status === "approved",
-              );
-              return changes.length > 0 ? (
-                <section className="space-y-3">
-                  <h2 className="font-serif text-2xl">Changes to check</h2>
-                  <p className="text-sm text-ivory/60">Live hosts who changed their price or photos. Their table is hidden until you approve.</p>
-                  <ul className="space-y-4">{changes.map((t) => <TableChange key={t.id} state={state} table={t} />)}</ul>
-                </section>
-              ) : null;
-            })()}
-            <section>
-              <h2 className="text-sm tracking-[0.15em] text-ivory/55 uppercase">All hosts</h2>
-              <ul className="mt-3 divide-y divide-ivory/10">
-                {reviewed.map((host) => {
-                  const table = state.tables.find((t) => t.hostId === host.id);
-                  return (
-                    <li key={host.id} className="flex items-center justify-between gap-3 py-3">
-                      <span className="min-w-0">
-                        <span className="block truncate">{host.displayName}</span>
-                        <span className="block text-xs text-ivory/55">{findExploreCity(host.cityId)?.name}</span>
-                      </span>
-                      <span className="flex items-center gap-3">
-                        {table && <StatusChip status={table.status} />}
-                        {table && <Link href={`/tables/${table.id}`} className={`rounded text-sm underline ${focusRing}`}>View</Link>}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+            <div className="flex items-start justify-between gap-4">
+              <PageTitle kicker="Mehman team" title="Review">
+                Check every home before it goes live, and every price or photo change after.
+              </PageTitle>
+              <Link href="/explore" className={`mt-1 shrink-0 rounded text-sm text-ivory/70 underline underline-offset-4 md:hidden ${focusRing}`}>
+                Switch to travelling
+              </Link>
+            </div>
+
+            <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {stats.map((stat) => (
+                <div key={stat.label} className={`${cardClass} px-3 py-4 text-center`}>
+                  <p className="font-serif text-3xl">{stat.value}</p>
+                  <p className="text-xs text-ivory/55">{stat.label}</p>
+                </div>
+              ))}
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="font-serif text-2xl">New host applications</h2>
+              {pending.length === 0 ? (
+                <p className={`${cardClass} text-ivory/70`}>No applications waiting.</p>
+              ) : (
+                <ul className="space-y-6">{pending.map((h) => <Application key={h.id} state={state} host={h} />)}</ul>
+              )}
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="font-serif text-2xl">Changes to check</h2>
+              <p className="text-sm text-ivory/60">Live hosts who changed their price or photos. Their table is hidden until you approve.</p>
+              {changes.length === 0 ? (
+                <p className={`${cardClass} text-ivory/70`}>Nothing to check.</p>
+              ) : (
+                <ul className="space-y-4">{changes.map((t) => <TableChange key={t.id} state={state} table={t} />)}</ul>
+              )}
             </section>
             <SampleDataNote />
           </div>

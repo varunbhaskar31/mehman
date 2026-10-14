@@ -15,6 +15,7 @@ import { primaryButtonClass, TextField } from "@/app/_components/fields";
 import { MehmanLogo } from "@/app/_components/mehman-logo";
 import {
   currentUser,
+  homeFor,
   hostForUser,
   resetDemo,
   signOut,
@@ -99,6 +100,7 @@ function PersonalInfo({ user }: { user: Profile }) {
 
 function PreviewTools({ user }: { user: Profile }) {
   const state = useDemoState();
+  const router = useRouter();
   const describe = (profile: Profile) => {
     if (profile.role === "admin") return "Mehman team (approves hosts)";
     const host = hostForUser(state, profile.id);
@@ -121,7 +123,18 @@ function PreviewTools({ user }: { user: Profile }) {
             {profile.id === user.id ? (
               <span className="text-xs text-[#e8c08f]">You now</span>
             ) : (
-              <button type="button" onClick={() => switchUser(profile.id)} className={secondaryButtonClass}>Switch</button>
+              <button
+                type="button"
+                onClick={() => {
+                  // Land where that person starts: hosting mode, the team
+                  // console, or Explore.
+                  switchUser(profile.id);
+                  router.push(homeFor(state, profile.id));
+                }}
+                className={secondaryButtonClass}
+              >
+                Switch
+              </button>
             )}
           </li>
         ))}
@@ -139,7 +152,15 @@ function HostingCard({ user }: { user: Profile }) {
   const table = host && state.tables.find((t) => t.hostId === host.id);
 
   let body: ReactNode;
-  if (host) {
+  if (user.role === "admin") {
+    body = (
+      <>
+        <p className="font-serif text-2xl">Mehman team</p>
+        <p className="mt-1 text-sm text-ivory/70">Review new hosts, look after live tables and follow every booking.</p>
+        <Link href="/admin" className={`${primaryButtonClass} mt-5 w-full`}>Open team console</Link>
+      </>
+    );
+  } else if (host) {
     body = (
       <>
         <div className="flex items-center gap-2">
@@ -212,9 +233,6 @@ export function ProfileScreen() {
           />
           <HostingCard user={me} />
           <PersonalInfo key={me.id} user={me} />
-          {me.role === "admin" && (
-            <RowList title="Mehman team" rows={[{ href: "/admin", label: "Review hosts", detail: "Approve new hosts and table changes" }]} />
-          )}
           <RowList title="About Mehman" rows={infoRows} />
           <button
             type="button"

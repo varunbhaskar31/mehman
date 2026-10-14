@@ -7,7 +7,15 @@ import { currentUser, hostForUser, useDemoState } from "@/lib/demo/store";
 // invitation to become one.
 export function ModeSwitchLink({ className }: { className: string }) {
   const state = useDemoState();
-  const isHost = Boolean(hostForUser(state, currentUser(state)?.id));
+  const user = currentUser(state);
+  if (user?.role === "admin") {
+    return (
+      <Link href="/admin" className={className}>
+        Team console
+      </Link>
+    );
+  }
+  const isHost = Boolean(hostForUser(state, user?.id));
   return (
     <Link href={isHost ? "/host" : "/become-a-host"} className={className}>
       {isHost ? "Switch to hosting" : "Become a host"}

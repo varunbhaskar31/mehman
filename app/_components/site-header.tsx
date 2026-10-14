@@ -15,12 +15,15 @@ type Page =
   | "calendar"
   | "requests"
   | "table"
-  | "earnings";
+  | "earnings"
+  | "admin-review"
+  | "admin-hosts"
+  | "admin-bookings";
 
 type SiteHeaderProps = {
   current?: Page;
-  // Hosting mode swaps the menu for the host's own sections.
-  mode?: "travelling" | "host";
+  // Hosting mode and the Mehman team console swap in their own menus.
+  mode?: "travelling" | "host" | "admin";
 };
 
 const focusRing =
@@ -41,6 +44,15 @@ const hostLinks: { page: Page; href: string; label: string }[] = [
   { page: "earnings", href: "/host/earnings", label: "Earnings" },
 ];
 
+const adminLinks: { page: Page; href: string; label: string }[] = [
+  { page: "admin-review", href: "/admin", label: "Review" },
+  { page: "admin-hosts", href: "/admin/hosts", label: "Hosts" },
+  { page: "admin-bookings", href: "/admin/bookings", label: "Bookings" },
+];
+
+const modeHome = { travelling: "/explore", host: "/host", admin: "/admin" };
+const modeBadge = { travelling: null, host: "Hosting", admin: "Mehman team" };
+
 const linkClass = (isCurrent: boolean) =>
   `${focusRing} ${
     isCurrent
@@ -51,19 +63,20 @@ const linkClass = (isCurrent: boolean) =>
 // Phones show just the logo; the bottom tabs do the navigating. Wider
 // screens get the full website menu.
 export function SiteHeader({ current, mode = "travelling" }: SiteHeaderProps) {
-  const menu = mode === "host" ? hostLinks : travellingLinks;
+  const menu = mode === "host" ? hostLinks : mode === "admin" ? adminLinks : travellingLinks;
+  const badge = modeBadge[mode];
 
   return (
     <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] text-ivory md:px-10 md:pt-7">
       <Link
-        href={mode === "host" ? "/host" : "/explore"}
+        href={modeHome[mode]}
         className={`flex items-center gap-2 font-serif text-2xl leading-none ${focusRing}`}
       >
         <MehmanLogo className="h-9 w-auto" />
         Mehman
-        {mode === "host" && (
-          <span className="rounded-full bg-[#e8c08f]/15 px-2.5 py-1 font-sans text-xs text-[#e8c08f]">
-            Hosting
+        {badge && (
+          <span className="rounded-full bg-[#e8c08f]/15 px-2.5 py-1 font-sans text-xs whitespace-nowrap text-[#e8c08f]">
+            {badge}
           </span>
         )}
       </Link>
@@ -90,7 +103,7 @@ export function SiteHeader({ current, mode = "travelling" }: SiteHeaderProps) {
       </div>
 
       <div className="hidden items-center gap-2 md:flex">
-        {mode === "host" ? (
+        {mode !== "travelling" ? (
           <Link href="/explore" className={`mr-2 text-sm ${linkClass(false)}`}>
             Switch to travelling
           </Link>

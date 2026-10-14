@@ -36,6 +36,19 @@ const icons: Record<string, ReactNode> = {
       <path d="M12 6V4.5M4 17h16" />
     </svg>
   ),
+  review: (
+    <svg {...iconProps}>
+      <path d="M9 11l2 2 4-4" />
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+    </svg>
+  ),
+  hosts: (
+    <svg {...iconProps}>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 19c.8-3 3.2-5 6-5s5.2 2 6 5" />
+      <path d="M16 5.5a3 3 0 0 1 0 5.5M18 14c1.5.7 2.6 2.5 3 5" />
+    </svg>
+  ),
   saved: (
     <svg {...iconProps}>
       <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
@@ -82,6 +95,10 @@ export function MobileTabBar() {
   const host = hostForUser(state, user?.id);
 
   const hostMode = pathname === "/host" || pathname.startsWith("/host/");
+  const adminMode = pathname === "/admin" || pathname.startsWith("/admin/");
+  const toReview =
+    state.hosts.filter((h) => h.status === "pending").length +
+    state.tables.filter((t) => t.status === "pending" && state.hosts.find((h) => h.id === t.hostId)?.status === "approved").length;
   const pendingRequests = host
     ? state.bookings.filter(
         (b) =>
@@ -94,7 +111,14 @@ export function MobileTabBar() {
 
   const under = (...paths: string[]) => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
-  const tabs: { key: string; icon: string; href: string; label: string; current: boolean; badge?: number }[] = hostMode
+  const tabs: { key: string; icon: string; href: string; label: string; current: boolean; badge?: number }[] = adminMode
+    ? [
+        { key: "review", icon: "review", href: "/admin", label: "Review", current: pathname === "/admin", badge: toReview },
+        { key: "hosts", icon: "hosts", href: "/admin/hosts", label: "Hosts", current: under("/admin/hosts") },
+        { key: "bookings", icon: "trips", href: "/admin/bookings", label: "Bookings", current: under("/admin/bookings") },
+        { key: "profile", icon: "account", href: "/profile", label: "Profile", current: false },
+      ]
+    : hostMode
     ? [
         { key: "today", icon: "today", href: "/host", label: "Today", current: pathname === "/host" },
         { key: "calendar", icon: "trips", href: "/host/calendar", label: "Calendar", current: under("/host/calendar") },
@@ -107,7 +131,7 @@ export function MobileTabBar() {
         // Opens the city chosen last on Explore.
         { key: "experiences", icon: "experiences", href: "/experiences", label: "Experiences", current: pathname.startsWith("/explore/") || under("/experiences", "/tables") },
         { key: "saved", icon: "saved", href: "/saved", label: "Saved", current: under("/saved") },
-        { key: "profile", icon: "account", href: "/profile", label: "Profile", current: under("/profile", "/login", "/admin", "/become-a-host", "/how-it-works", "/our-story", "/bookings", "/updates") },
+        { key: "profile", icon: "account", href: "/profile", label: "Profile", current: under("/profile", "/login", "/become-a-host", "/how-it-works", "/our-story", "/bookings", "/updates") },
       ];
 
   return (
