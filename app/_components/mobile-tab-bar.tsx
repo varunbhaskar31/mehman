@@ -12,6 +12,9 @@ const tabs = [
 export function MobileTabBar() {
   const pathname = usePathname();
 
+  // Explore carries the full menu in its own header.
+  if (pathname === "/explore") return null;
+
   return (
     <>
       {/* Keeps page content clear of the fixed bar. */}

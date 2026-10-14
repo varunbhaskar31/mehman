@@ -45,6 +45,8 @@ export type ExploreCity = {
   aliases: string[];
   thumbnail: StaticImageData;
   coords: { lat: number; lng: number };
+  // A welcome in the city's own language, shown as the city opens.
+  greeting: { local: string; english: string };
   experienceIds: string[];
 };
 
@@ -243,6 +245,7 @@ export const exploreCities: ExploreCity[] = [
     aliases: ["bangalore"],
     thumbnail: bengaluruThumb,
     coords: { lat: 12.9716, lng: 77.5946 },
+    greeting: { local: "Banni, oota maadi", english: "Come, have a meal" },
     experienceIds: [
       "rajasthani-family-thali",
       "karnataka-home-meal",
@@ -256,6 +259,7 @@ export const exploreCities: ExploreCity[] = [
     aliases: ["cochin", "ernakulam"],
     thumbnail: kochiThumb,
     coords: { lat: 9.9312, lng: 76.2673 },
+    greeting: { local: "Swagatham", english: "Welcome" },
     experienceIds: [
       "kerala-sadya",
       "syrian-christian-home-meal",
@@ -268,6 +272,7 @@ export const exploreCities: ExploreCity[] = [
     aliases: [],
     thumbnail: lucknowThumb,
     coords: { lat: 26.8467, lng: 80.9462 },
+    greeting: { local: "Tashreef laaiye", english: "Please, come in" },
     experienceIds: ["awadhi-dastarkhwan", "lucknowi-home-meal"],
   },
   {
@@ -276,6 +281,7 @@ export const exploreCities: ExploreCity[] = [
     aliases: [],
     thumbnail: jaipurThumb,
     coords: { lat: 26.9124, lng: 75.7873 },
+    greeting: { local: "Padharo mhare des", english: "Welcome to our land" },
     experienceIds: ["rajasthani-family-thali", "dal-baati-churma-experience"],
   },
   {
@@ -284,6 +290,7 @@ export const exploreCities: ExploreCity[] = [
     aliases: ["calcutta"],
     thumbnail: kolkataThumb,
     coords: { lat: 22.5726, lng: 88.3639 },
+    greeting: { local: "Esho, kheye jao", english: "Come, eat before you go" },
     experienceIds: ["bengali-family-lunch", "bengali-fish-meal"],
   },
   {
@@ -292,6 +299,7 @@ export const exploreCities: ExploreCity[] = [
     aliases: ["secunderabad"],
     thumbnail: hyderabadThumb,
     coords: { lat: 17.385, lng: 78.4867 },
+    greeting: { local: "Khush aamdeed", english: "Welcome" },
     experienceIds: ["hyderabadi-home-feast", "deccani-meal"],
   },
 ];
@@ -340,7 +348,7 @@ export function nearestCity(lat: number, lng: number, maxKm = 60) {
 }
 
 export function exploreCityHref(city: ExploreCity) {
-  return `/explore?city=${city.id}`;
+  return `/explore/${city.id}`;
 }
 
 export function experienceHref(experience: Experience, city: ExploreCity) {
