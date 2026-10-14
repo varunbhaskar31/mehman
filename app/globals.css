@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  --color-forest: #223220;
-  --color-forest-deep: #1b2a1c;
+  --color-forest: #33221a;
+  --color-forest-deep: #2a1b11;
   --color-terracotta: #a54824;
   --color-cream: #f6e7cc;
-  --color-pine: #142116;
+  --color-pine: #1a110b;
   --color-ivory: #f6efdf;
   --color-terracotta-soft: #d88c6a;
-  --color-night: #101b12;
+  --color-night: #120b07;
 }
 
 @theme inline {
@@ -33,24 +33,14 @@ body {
 }
 
 /*
- * Wider screens take the welcome's lamplit colours: the greens become warm
- * dark browns, and every page carries a soft amber glow, like the courtyard
- * at dusk. Phones keep Mehman's green.
+ * Inside the app, every page carries a soft amber glow over the warm
+ * brown, like the welcome's courtyard at dusk.
  */
-@media (min-width: 768px) {
-  :root {
-    --color-pine: #1a110b;
-    --color-forest-deep: #2a1b11;
-    --color-forest: #33221a;
-    --color-night: #120b07;
-  }
-
-  .app-surface {
-    background-image:
-      radial-gradient(ellipse 70% 55% at 12% 0%, rgb(205 125 50 / 0.16), transparent 70%),
-      radial-gradient(ellipse 60% 50% at 100% 100%, rgb(170 85 35 / 0.12), transparent 70%);
-    background-attachment: fixed;
-  }
+.app-surface {
+  background-image:
+    radial-gradient(ellipse 70% 55% at 12% 0%, rgb(205 125 50 / 0.16), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgb(170 85 35 / 0.12), transparent 70%);
+  background-attachment: fixed;
 }
 
 /*
@@ -100,7 +90,7 @@ body {
   display: grid;
   place-items: center;
   border-radius: 9999px;
-  background-color: #223220;
+  background-color: #3b2416;
   color: #f4ecdc;
   font-family: var(--font-cta), ui-sans-serif, system-ui, sans-serif;
   font-size: 3.3cqw;
@@ -120,11 +110,11 @@ body {
 }
 
 .welcome-cta:hover {
-  background-color: #2a3e27;
+  background-color: #4a2e1c;
 }
 
 .welcome-cta:active {
-  background-color: #192618;
+  background-color: #2c1a0f;
 }
 
 .welcome-cta:focus-visible {
@@ -641,8 +631,8 @@ input {
   inset: 0;
   background: radial-gradient(
     circle at 50% 45%,
-    rgb(20 33 22 / 0.35),
-    rgb(20 33 22 / 0.85) 75%
+    rgb(26 17 11 / 0.35),
+    rgb(26 17 11 / 0.85) 75%
   );
 }
 
@@ -954,15 +944,13 @@ input {
     margin-top: 0;
   }
 
-  /* Wider screens: the green felt table melts into a green pool that
-     warms to the page's lamplit brown at the edges, so it never shows as
-     a box. */
+  /* Wider screens: the table's edges melt into the page instead of
+     stopping at a hard line. */
   .explore-page {
     background: radial-gradient(
-        ellipse calc(var(--art-w) * 0.95) 75% at 50% 45%,
-        #1b2a1a 0%,
-        #182316 38%,
-        var(--color-pine) 100%
+        ellipse calc(var(--art-w) * 1.1) 80% at 50% 40%,
+        #22170f,
+        var(--color-pine)
       );
   }
 
@@ -1355,7 +1343,7 @@ input {
   margin: 0 auto;
   padding: 0 1.25rem 4.5rem;
   text-align: center;
-  text-shadow: 0 2px 18px rgb(20 33 22 / 0.8);
+  text-shadow: 0 2px 18px rgb(26 17 11 / 0.8);
 }
 
 .story-kicker {
