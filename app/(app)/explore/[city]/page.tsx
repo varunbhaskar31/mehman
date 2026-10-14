@@ -24,7 +24,7 @@ export default async function CityPage({
   if (!city) notFound();
 
   return (
-    <div className="min-h-dvh bg-pine text-ivory">
+    <div className="min-h-dvh bg-pine app-surface text-ivory">
       <SiteHeader current="experiences" />
       <main className="mx-auto max-w-4xl px-4 pt-4 pb-16 md:max-w-7xl md:px-10 md:pt-2 md:pb-24">
         <div className="md:hidden">

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function BecomeAHostPage() {
   return (
-    <div className="min-h-dvh bg-pine text-ivory">
+    <div className="min-h-dvh bg-pine app-surface text-ivory">
       <SiteHeader current="host" />
       <main className="mx-auto grid max-w-6xl gap-10 px-4 pt-6 pb-16 md:grid-cols-[1fr_1fr] md:gap-20 md:px-10 md:pt-12 md:pb-24">
         <div>

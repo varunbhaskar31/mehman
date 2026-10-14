@@ -8,6 +8,7 @@
   --color-pine: #142116;
   --color-ivory: #f6efdf;
   --color-terracotta-soft: #d88c6a;
+  --color-night: #101b12;
 }
 
 @theme inline {
@@ -29,6 +30,27 @@ body {
     -apple-system,
     "Segoe UI",
     sans-serif;
+}
+
+/*
+ * Wider screens take the welcome's lamplit colours: the greens become warm
+ * dark browns, and every page carries a soft amber glow, like the courtyard
+ * at dusk. Phones keep Mehman's green.
+ */
+@media (min-width: 768px) {
+  :root {
+    --color-pine: #1a110b;
+    --color-forest-deep: #2a1b11;
+    --color-forest: #33221a;
+    --color-night: #120b07;
+  }
+
+  .app-surface {
+    background-image:
+      radial-gradient(ellipse 70% 55% at 12% 0%, rgb(205 125 50 / 0.16), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 100% 100%, rgb(170 85 35 / 0.12), transparent 70%);
+    background-attachment: fixed;
+  }
 }
 
 /*
@@ -397,57 +419,68 @@ body {
 }
 
 /*
- * Desktop welcome: words on the left, the whole courtyard feast on the
- * right with its edges melting into the green. The art box keeps the
- * painting's 1672×941 ratio, so nothing is cropped and the lamp glows stay
- * on their lamps. Only on wide, landscape screens; phones and tablets keep
- * the kitchen painting above.
+ * Desktop welcome: a two-part story. The kitchen painting (framed, as on
+ * tablets) on the left; the courtyard feast and its words on the right, all
+ * over a blurred wash of the courtyard's lamplight. The courtyard box keeps
+ * the painting's 1672×941 ratio so the lamp glows stay on their lamps. Only
+ * on wide, landscape screens.
  */
-.welcome-desk {
+.welcome-desk,
+.welcome-desk-glow {
   display: none;
 }
 
 @media (min-width: 1024px) and (min-aspect-ratio: 5 / 4) {
   .welcome-page {
-    display: block;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(2rem, 4vw, 4.5rem);
+    padding: 1.5rem clamp(2rem, 4vw, 4.5rem);
+    overflow: hidden;
     background: var(--color-pine);
   }
 
   .welcome-stage {
-    display: none;
-  }
-
-  .welcome-desk {
-    --art-w: min(68vw, calc((100dvh - 3rem) * 1672 / 941));
-    position: relative;
-    display: flex;
-    align-items: center;
-    width: 100%;
-    min-height: 100dvh;
-    overflow: hidden;
-    color: var(--color-ivory);
-    background: var(--color-pine);
+    z-index: 1;
+    flex-shrink: 0;
+    height: min(calc(100dvh - 3rem), 900px);
   }
 
   .welcome-desk-glow {
+    display: block;
     object-fit: cover;
     scale: 1.15;
     filter: blur(48px) brightness(0.42) saturate(1.15);
     pointer-events: none;
   }
 
+  .welcome-desk {
+    position: relative;
+    z-index: 1;
+    display: block;
+    flex: 1;
+    max-width: 48rem;
+    color: var(--color-ivory);
+    animation: welcome-desk-rise 900ms ease-out 300ms both;
+  }
+
+  .welcome-desk-kicker {
+    margin-bottom: 1rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #f3c98b;
+  }
+
   .welcome-desk-art {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    width: var(--art-w);
+    position: relative;
+    width: 100%;
     aspect-ratio: 1672 / 941;
-    translate: 0 -50%;
-    mask-image:
-      linear-gradient(to right, transparent, #000 12%),
-      linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
-    mask-composite: intersect;
-    animation: welcome-fade-in 900ms ease-out both;
+    overflow: hidden;
+    border-radius: 1.5rem;
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
   }
 
   .welcome-desk-art img {
@@ -476,27 +509,8 @@ body {
   }
 
   .welcome-desk-copy {
-    position: relative;
-    z-index: 1;
-    width: calc(100vw - var(--art-w) + 3rem);
-    max-width: 34rem;
-    padding-left: clamp(2.5rem, 5vw, 5rem);
-    padding-right: 1rem;
-    animation: welcome-desk-rise 900ms ease-out 250ms both;
-  }
-
-  .welcome-desk-veil {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    background: var(--color-pine);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 550ms ease-in 150ms;
-  }
-
-  .welcome-desk-veil[data-active] {
-    opacity: 1;
+    margin-top: 1.75rem;
+    text-shadow: 0 2px 14px rgb(0 0 0 / 0.4);
   }
 }
 
@@ -517,15 +531,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .welcome-desk-art,
+  .welcome-desk,
   .welcome-desk-art img,
-  .welcome-desk-lamp,
-  .welcome-desk-copy {
+  .welcome-desk-lamp {
     animation: none;
-  }
-
-  .welcome-desk-veil {
-    transition: none;
   }
 }
 
@@ -945,20 +954,22 @@ input {
     margin-top: 0;
   }
 
-  /* Wider screens: the table's edges melt into the page instead of
-     stopping at a hard line. */
+  /* Wider screens: the green felt table melts into a green pool that
+     warms to the page's lamplit brown at the edges, so it never shows as
+     a box. */
   .explore-page {
     background: radial-gradient(
-        ellipse calc(var(--art-w) * 1.1) 80% at 50% 40%,
-        #1b2c1b,
-        var(--color-pine)
+        ellipse calc(var(--art-w) * 0.95) 75% at 50% 45%,
+        #1b2a1a 0%,
+        #182316 38%,
+        var(--color-pine) 100%
       );
   }
 
   .explore-art {
     left: calc(50% - var(--art-w) / 2);
     mask-image:
-      linear-gradient(to right, transparent, #000 16%, #000 84%, transparent),
+      linear-gradient(to right, transparent, #000 22%, #000 78%, transparent),
       linear-gradient(to bottom, #000 90%, transparent);
     mask-composite: intersect;
   }

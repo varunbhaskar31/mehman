@@ -14,7 +14,7 @@ async function TableFromParams({ params }: { params: PageProps<"/tables/[id]">["
 
 export default function TablePage({ params }: PageProps<"/tables/[id]">) {
   return (
-    <div className="min-h-dvh bg-pine text-ivory">
+    <div className="min-h-dvh bg-pine app-surface text-ivory">
       <SiteHeader current="experiences" />
       <main className="mx-auto max-w-3xl pt-4 pb-16 md:max-w-6xl md:px-10 md:pt-8 md:pb-24">
         <Suspense fallback={<p className="py-16 text-center text-sm text-ivory/50">Loading…</p>}>

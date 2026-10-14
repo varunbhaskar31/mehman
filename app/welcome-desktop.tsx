@@ -1,13 +1,6 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { MehmanLogo } from "@/app/_components/mehman-logo";
 import courtyard from "@/assets/welcome-desktop.jpg";
-
-const ENTER_DURATION_MS = 700;
 
 // Lamp flames in the 1672×941 painting, as % of its width and height.
 const lamps = [
@@ -20,94 +13,48 @@ const lamps = [
 ];
 
 /**
- * The welcome on wide screens: the greeting and "Step inside" beside a
- * family courtyard feast. Phones keep the kitchen painting (see page.tsx).
+ * Wide screens: the kitchen painting (with its own "Step inside") stands on
+ * the left, and this panel tells the rest of the story on the right: the
+ * meal she cooked, shared with family and guests in the courtyard. Both sit
+ * on a blurred wash of the courtyard's lamplight. Phones show only the
+ * kitchen painting.
  */
 export function WelcomeDesktop() {
-  const router = useRouter();
-  const [entering, setEntering] = useState(false);
-  const timer = useRef<number | null>(null);
-
-  useEffect(
-    () => () => {
-      if (timer.current) window.clearTimeout(timer.current);
-      // Next keeps this page mounted while hidden; start fresh on return.
-      setEntering(false);
-    },
-    [],
-  );
-
-  function stepInside(event: MouseEvent<HTMLAnchorElement>) {
-    if (
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return;
-    }
-    event.preventDefault();
-    if (entering) return;
-    setEntering(true);
-    timer.current = window.setTimeout(() => router.push("/explore"), ENTER_DURATION_MS);
-  }
-
   return (
-    <div className="welcome-desk">
-      {/* The same painting, blurred, fills the screen with its lamplight. */}
+    <>
       <Image src={courtyard} alt="" fill sizes="20vw" quality={40} className="welcome-desk-glow" />
-      <div className="welcome-desk-art">
-        <Image
-          src={courtyard}
-          alt="A family feast in a lantern-lit courtyard: a woman in a cream sari serves guests at a long wooden table laden with dishes, grandparents laugh, children run and play, and a dog naps on the rug."
-          fill
-          sizes="66vw"
-          className="object-cover"
-        />
-        {lamps.map((lamp) => (
-          <span
-            key={`${lamp.x}-${lamp.y}`}
-            aria-hidden="true"
-            className="welcome-desk-lamp"
-            style={{ left: `${lamp.x}%`, top: `${lamp.y}%`, width: `${lamp.size}%` }}
+      <section aria-label="The meal, shared" className="welcome-desk">
+        <p className="welcome-desk-kicker">From her kitchen to your table</p>
+        <div className="welcome-desk-art">
+          <Image
+            src={courtyard}
+            alt="A family feast in a lantern-lit courtyard: a woman in a cream sari serves guests at a long wooden table laden with dishes, grandparents laugh, children run and play, and a dog naps on the rug."
+            fill
+            sizes="(min-width: 1600px) 760px, 50vw"
+            className="object-cover"
           />
-        ))}
-      </div>
-
-      <div className="welcome-desk-copy">
-        <p className="flex items-center gap-3 font-serif text-3xl leading-none">
-          <MehmanLogo className="h-12 w-auto" />
-          Mehman
-        </p>
-        <p className="mt-3 text-xs tracking-[0.35em] text-ivory/75 uppercase">People · Food · Cultures</p>
-        <h1 className="mt-8 font-[family-name:var(--font-hand)] text-[clamp(2.5rem,3.6vw,3.75rem)] leading-[1.05] text-[#f3c98b]">
-          Aao, khana tayyar hai!
-        </h1>
-        <p className="mt-2 font-serif text-2xl text-ivory">Come, food&rsquo;s ready.</p>
-        <p className="mt-4 max-w-md text-[17px] leading-relaxed text-ivory/80">
-          Pull up a chair at a family&rsquo;s table, from Kochi to Kolkata. Home-cooked meals, shared by the people who make them.
-        </p>
-        <div className="mt-8 flex items-center gap-6">
-          <Link
-            href="/explore"
-            onClick={stepInside}
-            className="inline-flex h-14 items-center gap-4 rounded-full bg-ivory px-8 font-[family-name:var(--font-cta)] text-lg font-medium text-pine shadow-[0_10px_30px_rgb(0_0_0/0.35)] transition hover:bg-white focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ivory active:scale-[0.98]"
-          >
-            Step inside
-            <span aria-hidden="true">→</span>
-          </Link>
+          {lamps.map((lamp) => (
+            <span
+              key={`${lamp.x}-${lamp.y}`}
+              aria-hidden="true"
+              className="welcome-desk-lamp"
+              style={{ left: `${lamp.x}%`, top: `${lamp.y}%`, width: `${lamp.size}%` }}
+            />
+          ))}
+        </div>
+        <div className="welcome-desk-copy">
+          <p className="font-serif text-[clamp(1.75rem,2.4vw,2.5rem)] leading-tight">Come, food&rsquo;s ready.</p>
+          <p className="mt-3 max-w-xl text-[17px] leading-relaxed text-ivory/80">
+            Every meal on Mehman starts in a family&rsquo;s kitchen and ends around their table. Pull up a chair, from Kochi to Kolkata, and eat with the people who cooked it.
+          </p>
           <Link
             href="/how-it-works"
-            className="rounded text-[15px] text-ivory/85 underline decoration-ivory/40 underline-offset-[6px] hover:text-ivory hover:decoration-ivory focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ivory"
+            className="mt-5 inline-block rounded text-[15px] text-ivory/85 underline decoration-ivory/40 underline-offset-[6px] hover:text-ivory hover:decoration-ivory focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ivory"
           >
             How Mehman works
           </Link>
         </div>
-      </div>
-
-      <div aria-hidden="true" className="welcome-desk-veil" data-active={entering ? "" : undefined} />
-    </div>
+      </section>
+    </>
   );
 }

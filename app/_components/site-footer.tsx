@@ -39,7 +39,7 @@ export function SiteFooter() {
   if (hidden) return null;
 
   return (
-    <footer className="hidden border-t border-ivory/10 bg-[#101b12] text-ivory md:block">
+    <footer className="hidden border-t border-ivory/10 bg-night text-ivory md:block">
       <div className="mx-auto max-w-7xl px-10 py-12">
         <div className="grid grid-cols-3 gap-10">
           {columns.map((column) => (

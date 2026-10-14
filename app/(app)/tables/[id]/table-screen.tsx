@@ -238,7 +238,7 @@ export function TableScreen({ tableId }: { tableId: string }) {
         {/* Phones: dates and guests follow the story. Wider screens: a
             booking box that stays in view, like Airbnb's. */}
         <aside className="mt-8 md:mt-0">
-          <div className="space-y-8 md:sticky md:top-8 md:space-y-6 md:rounded-2xl md:border md:border-ivory/15 md:bg-[#1b2a1c] md:p-6 md:shadow-[0_6px_24px_rgb(0_0_0/0.4)]">
+          <div className="space-y-8 md:sticky md:top-8 md:space-y-6 md:rounded-2xl md:border md:border-ivory/15 md:bg-forest-deep md:p-6 md:shadow-[0_6px_24px_rgb(0_0_0/0.4)]">
             <p className="hidden md:block">
               <span className="font-serif text-2xl">{formatPrice(table.pricePerGuest)}</span>
               <span className="text-ivory/65"> per guest</span>

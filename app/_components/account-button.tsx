@@ -98,14 +98,14 @@ export function AccountButton() {
         ) : (
           <svg viewBox="0 0 32 32" aria-hidden="true" className="size-9 text-ivory/60">
             <circle cx="16" cy="16" r="16" fill="currentColor" />
-            <circle cx="16" cy="12.5" r="5" fill="#142116" />
-            <path d="M6.5 26.5c2-4.5 5.5-6.5 9.5-6.5s7.5 2 9.5 6.5" fill="#142116" />
+            <circle cx="16" cy="12.5" r="5" fill="var(--color-pine)" />
+            <path d="M6.5 26.5c2-4.5 5.5-6.5 9.5-6.5s7.5 2 9.5 6.5" fill="var(--color-pine)" />
           </svg>
         )}
         {unread > 0 && <span aria-hidden="true" className="absolute top-1 right-1 size-2.5 rounded-full border-2 border-pine bg-terracotta" />}
       </button>
       {open && (
-        <div role="menu" className="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-ivory/10 bg-[#1b2a1c] py-2 shadow-[0_8px_28px_rgb(0_0_0/0.55)]">
+        <div role="menu" className="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-ivory/10 bg-forest-deep py-2 shadow-[0_8px_28px_rgb(0_0_0/0.55)]">
           {groups.map((items, index) => (
             <div key={index} className={index > 0 ? "mt-2 border-t border-ivory/10 pt-2" : ""}>
               {items.map((item) => (

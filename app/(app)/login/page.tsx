@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-dvh bg-pine text-ivory">
+    <div className="min-h-dvh bg-pine app-surface text-ivory">
       <main className="mx-auto max-w-md px-5 pt-[max(1.5rem,env(safe-area-inset-top))] pb-16">
         <Suspense>
           <LoginFlow />

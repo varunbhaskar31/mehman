@@ -12,5 +12,5 @@ export default function ExperiencesPage() {
     const city = findExploreCity(lastCity()) ?? defaultExploreCity;
     router.replace(`/explore/${city.id}`);
   }, [router]);
-  return <p className="min-h-dvh bg-pine py-24 text-center text-sm text-ivory/50">Loading experiences…</p>;
+  return <p className="min-h-dvh bg-pine app-surface py-24 text-center text-sm text-ivory/50">Loading experiences…</p>;
 }

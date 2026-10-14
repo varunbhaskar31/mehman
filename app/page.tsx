@@ -6,8 +6,6 @@ import { WelcomeScene } from "./welcome-scene";
 export default function WelcomePage() {
   return (
     <main className="welcome-page" aria-labelledby="welcome-title">
-      {/* Laptops and desktops get their own wide courtyard scene. */}
-      <WelcomeDesktop />
       <div className="welcome-stage">
         <div className="welcome-art">
           {/* The wordmark and tagline are drawn into the artwork, so their
@@ -27,6 +25,8 @@ export default function WelcomePage() {
           <WelcomeScene />
         </div>
       </div>
+      {/* Laptops and desktops: the courtyard feast beside the kitchen. */}
+      <WelcomeDesktop />
     </main>
   );
 }
