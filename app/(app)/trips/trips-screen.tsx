@@ -17,11 +17,49 @@ import {
 } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
 import {
+  addReview,
   bookingDetails,
   setBookingStatus,
   useDemoState,
 } from "@/lib/demo/store";
 import type { Booking, DemoState } from "@/lib/demo/types";
+
+function ReviewForm({ booking, hostName }: { booking: Booking; hostName: string }) {
+  const [rating, setRating] = useState(0);
+  const [text, setText] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!rating) return setError("Tap the stars to rate your meal.");
+        const result = addReview(booking.id, rating, text);
+        setError("error" in result ? result.error : null);
+      }}
+      className="space-y-3"
+    >
+      <p className="text-ivory/80">How was your meal with {hostName}?</p>
+      <div role="radiogroup" aria-label="Rating" className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            role="radio"
+            aria-checked={rating === star}
+            aria-label={`${star} ${star === 1 ? "star" : "stars"}`}
+            onClick={() => setRating(star)}
+            className={`grid size-11 place-items-center rounded-full text-3xl leading-none ${focusRing} ${star <= rating ? "text-[#e8c08f]" : "text-ivory/25"}`}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+      <textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} aria-label="Your review" placeholder="What will you remember about this meal?" className="block w-full rounded-xl border border-ivory/25 bg-transparent px-4 py-3 text-ivory placeholder:text-ivory/35 focus-visible:outline-2 focus-visible:outline-ivory" />
+      {error && <p role="alert" className="text-terracotta-soft">{error}</p>}
+      <button type="submit" className={primaryButtonClass}>Post review</button>
+    </form>
+  );
+}
 
 function TripCard({ state, booking }: { state: DemoState; booking: Booking }) {
   const { session, table, host } = bookingDetails(state, booking);
@@ -57,7 +95,7 @@ function TripCard({ state, booking }: { state: DemoState; booking: Booking }) {
             </p>
             <p className="text-ivory/80">
               <span className="text-ivory/55">Pay at the meal · </span>
-              {formatPrice(table.pricePerGuest * booking.partySize)} (UPI or cash)
+              {formatPrice(booking.pricePerGuest * booking.partySize)} (UPI or cash)
             </p>
             <div className="flex flex-wrap gap-2 pt-1">
               <a href={`tel:${hostPhone}`} className={secondaryButtonClass}>Call host</a>
@@ -66,6 +104,14 @@ function TripCard({ state, booking }: { state: DemoState; booking: Booking }) {
             </div>
           </div>
         )}
+        {booking.status === "completed" &&
+          (state.reviews.some((r) => r.bookingId === booking.id) ? (
+            <p className="text-ivory/70">
+              You rated this meal {"★".repeat(state.reviews.find((r) => r.bookingId === booking.id)!.rating)}. Thank you!
+            </p>
+          ) : (
+            <ReviewForm booking={booking} hostName={host.displayName} />
+          ))}
         {booking.status === "declined" && (
           <p className="text-ivory/70">{host.displayName} couldn&rsquo;t host you on this date. Try another date or table.</p>
         )}

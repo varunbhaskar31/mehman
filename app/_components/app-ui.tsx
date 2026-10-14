@@ -40,7 +40,8 @@ const statusStyles: Record<string, { label: string; className: string }> = {
   accepted: { label: "Confirmed", className: "bg-[#8fc79a]/15 text-[#a9d9b1]" },
   declined: { label: "Declined", className: "bg-ivory/10 text-ivory/60" },
   cancelled: { label: "Cancelled", className: "bg-ivory/10 text-ivory/60" },
-  completed: { label: "Completed", className: "bg-ivory/10 text-ivory/75" },
+  completed: { label: "Hosted", className: "bg-ivory/10 text-ivory/75" },
+  no_show: { label: "No-show", className: "bg-terracotta/20 text-terracotta-soft" },
   pending: { label: "Under review", className: "bg-[#e8c08f]/15 text-[#e8c08f]" },
   approved: { label: "Live", className: "bg-[#8fc79a]/15 text-[#a9d9b1]" },
   paused: { label: "Paused", className: "bg-ivory/10 text-ivory/70" },
@@ -63,6 +64,16 @@ export function SampleDataNote() {
       Preview with sample data. Everything you do here is saved only on this
       device until Mehman&rsquo;s database is connected.
     </p>
+  );
+}
+
+export function Stars({ rating, className = "" }: { rating: number; className?: string }) {
+  const rounded = Math.round(rating);
+  return (
+    <span className={`text-[#e8c08f] ${className}`} aria-label={`${rating.toFixed(1)} out of 5 stars`}>
+      {"★".repeat(rounded)}
+      <span className="text-ivory/20">{"★".repeat(5 - rounded)}</span>
+    </span>
   );
 }
 

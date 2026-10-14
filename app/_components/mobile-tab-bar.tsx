@@ -42,6 +42,30 @@ const icons: Record<string, ReactNode> = {
       <path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" />
     </svg>
   ),
+  today: (
+    <svg {...iconProps}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  ),
+  requests: (
+    <svg {...iconProps}>
+      <path d="M4 13h4l1.5 2.5h5L16 13h4" />
+      <path d="M6 5h12l2 8v6H4v-6z" />
+    </svg>
+  ),
+  table: (
+    <svg {...iconProps}>
+      <circle cx="12" cy="12" r="7" />
+      <circle cx="12" cy="12" r="3.5" />
+      <path d="M2 5v6M2 8h1.5M22 5v14" />
+    </svg>
+  ),
+  earnings: (
+    <svg {...iconProps}>
+      <path d="M7 5h10M7 9h10M9 5c4 0 5 2 5 4s-2 4-6 4l7 6" />
+    </svg>
+  ),
 };
 
 // Phone navigation. On wider screens the header links take over.
@@ -49,17 +73,37 @@ export function MobileTabBar() {
   const pathname = usePathname();
   const state = useDemoState();
   const user = currentUser(state);
-  const isHost = Boolean(hostForUser(state, user?.id));
+  const host = hostForUser(state, user?.id);
+  const isHost = Boolean(host);
 
   // Explore carries the full menu in its own header.
   if (pathname === "/explore") return null;
 
-  const tabs = [
-    { key: "explore", href: "/explore", label: "Explore", match: ["/explore", "/experiences", "/tables"] },
-    { key: "trips", href: "/trips", label: "Trips", match: ["/trips"] },
-    { key: "hosting", href: isHost ? "/host" : "/become-a-host", label: "Hosting", match: ["/host", "/become-a-host"] },
-    { key: "account", href: user ? "/account" : "/login", label: user ? "Account" : "Log in", match: ["/account", "/login", "/admin"] },
-  ];
+  const hostMode = pathname === "/host" || pathname.startsWith("/host/");
+  const pendingRequests = host
+    ? state.bookings.filter(
+        (b) =>
+          b.status === "requested" &&
+          state.tables.some(
+            (t) => t.hostId === host.id && state.sessions.some((x) => x.id === b.sessionId && x.tableId === t.id),
+          ),
+      ).length
+    : 0;
+
+  const tabs: { key: string; href: string; label: string; match: string[]; badge?: number }[] = hostMode
+    ? [
+        { key: "today", href: "/host", label: "Today", match: ["/host"] },
+        { key: "trips", href: "/host/calendar", label: "Calendar", match: ["/host/calendar"] },
+        { key: "requests", href: "/host/requests", label: "Requests", match: ["/host/requests"], badge: pendingRequests },
+        { key: "table", href: "/host/table", label: "My table", match: ["/host/table"] },
+        { key: "earnings", href: "/host/earnings", label: "Earnings", match: ["/host/earnings"] },
+      ]
+    : [
+        { key: "explore", href: "/explore", label: "Explore", match: ["/explore", "/experiences", "/tables"] },
+        { key: "trips", href: "/trips", label: "Trips", match: ["/trips"] },
+        { key: "hosting", href: isHost ? "/host" : "/become-a-host", label: "Hosting", match: ["/host", "/become-a-host"] },
+        { key: "account", href: user ? "/account" : "/login", label: user ? "Account" : "Log in", match: ["/account", "/login", "/admin", "/notifications"] },
+      ];
 
   return (
     <>
@@ -72,10 +116,11 @@ export function MobileTabBar() {
         aria-label="App"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-ivory/10 bg-pine/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
-        <ul className="grid grid-cols-4">
+        <ul className={`grid ${hostMode ? "grid-cols-5" : "grid-cols-4"}`}>
           {tabs.map((tab) => {
-            const isCurrent = tab.match.some(
-              (path) => pathname === path || pathname.startsWith(`${path}/`),
+            // "/host" (Today) matches exactly; other tabs match their section.
+            const isCurrent = tab.match.some((path) =>
+              path === "/host" ? pathname === path : pathname === path || pathname.startsWith(`${path}/`),
             );
             return (
               <li key={tab.key}>
@@ -86,7 +131,14 @@ export function MobileTabBar() {
                     isCurrent ? "text-[#e8c08f]" : "text-ivory/60"
                   }`}
                 >
-                  {icons[tab.key]}
+                  <span className="relative">
+                    {icons[tab.key]}
+                    {tab.badge ? (
+                      <span className="absolute -top-1 -right-2 grid min-w-4 place-items-center rounded-full bg-terracotta px-1 text-[10px] leading-4 text-ivory">
+                        {tab.badge}
+                      </span>
+                    ) : null}
+                  </span>
                   {tab.label}
                 </Link>
               </li>

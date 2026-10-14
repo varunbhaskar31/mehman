@@ -11,7 +11,8 @@ export type BookingStatus =
   | "accepted"
   | "declined"
   | "cancelled"
-  | "completed";
+  | "completed"
+  | "no_show";
 
 export type Profile = {
   id: string;
@@ -65,17 +66,43 @@ export type Booking = {
   sessionId: string;
   guestId: string;
   partySize: number;
+  // The price when the seat was requested; later price changes don't
+  // affect it.
+  pricePerGuest: number;
   note: string;
   status: BookingStatus;
   createdAt: string;
 };
 
+export type Review = {
+  id: string;
+  bookingId: string;
+  tableId: string;
+  guestId: string;
+  rating: number;
+  text: string;
+  hostReply: string | null;
+  createdAt: string;
+};
+
+export type AppNotification = {
+  id: string;
+  userId: string;
+  title: string;
+  body: string;
+  href: string;
+  read: boolean;
+  createdAt: string;
+};
+
 export type DemoState = {
-  version: 1;
+  version: 3;
   currentUserId: string | null;
   profiles: Profile[];
   hosts: Host[];
   tables: DiningTable[];
   sessions: DiningSession[];
   bookings: Booking[];
+  reviews: Review[];
+  notifications: AppNotification[];
 };

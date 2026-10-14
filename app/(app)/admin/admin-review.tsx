@@ -16,8 +16,8 @@ import {
 } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
 import { findExploreCity } from "@/data/experiences";
-import { reviewHost, upcomingSessions, useDemoState } from "@/lib/demo/store";
-import type { DemoState, Host } from "@/lib/demo/types";
+import { reviewHost, reviewTableChanges, upcomingSessions, useDemoState } from "@/lib/demo/store";
+import type { DemoState, DiningTable, Host } from "@/lib/demo/types";
 
 function Application({ state, host }: { state: DemoState; host: Host }) {
   const uid = useId();
@@ -90,6 +90,39 @@ function Application({ state, host }: { state: DemoState; host: Host }) {
   );
 }
 
+function TableChange({ state, table }: { state: DemoState; table: DiningTable }) {
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const host = state.hosts.find((h) => h.id === table.hostId)!;
+  function decide(approve: boolean) {
+    if (!approve && note.trim().length < 5) return setError("Add a short note so the host knows why.");
+    const result = reviewTableChanges(table.id, approve, note);
+    if ("error" in result) setError(result.error);
+  }
+  return (
+    <li className={`${cardClass} space-y-3`}>
+      <div>
+        <p className="font-serif text-xl">{host.displayName}</p>
+        <p className="text-sm text-ivory/60">{table.title} · now {formatPrice(table.pricePerGuest)} per guest</p>
+      </div>
+      <div className="no-scrollbar flex gap-2 overflow-x-auto">
+        {table.photos.map((photo, index) => (
+          <div key={index} className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-ivory/5">
+            <Image src={photo} alt="" fill sizes="96px" className="object-cover" />
+          </div>
+        ))}
+      </div>
+      <textarea aria-label="Note to the host" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (needed if you reject)" className="block w-full rounded-xl border border-ivory/25 bg-transparent px-4 py-3 text-ivory placeholder:text-ivory/35 focus-visible:outline-2 focus-visible:outline-ivory" />
+      {error && <p role="alert" className="text-sm text-terracotta-soft">{error}</p>}
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => decide(true)} className={primaryButtonClass}>Approve changes</button>
+        <button type="button" onClick={() => decide(false)} className={secondaryButtonClass}>Reject</button>
+        <Link href={`/tables/${table.id}`} className={`self-center rounded text-sm underline ${focusRing}`}>Preview</Link>
+      </div>
+    </li>
+  );
+}
+
 export function AdminReview() {
   const state = useDemoState();
 
@@ -108,6 +141,18 @@ export function AdminReview() {
             ) : (
               <ul className="space-y-6">{pending.map((h) => <Application key={h.id} state={state} host={h} />)}</ul>
             )}
+            {(() => {
+              const changes = state.tables.filter(
+                (t) => t.status === "pending" && state.hosts.find((h) => h.id === t.hostId)?.status === "approved",
+              );
+              return changes.length > 0 ? (
+                <section className="space-y-3">
+                  <h2 className="font-serif text-2xl">Changes to check</h2>
+                  <p className="text-sm text-ivory/60">Live hosts who changed their price or photos. Their table is hidden until you approve.</p>
+                  <ul className="space-y-4">{changes.map((t) => <TableChange key={t.id} state={state} table={t} />)}</ul>
+                </section>
+              ) : null;
+            })()}
             <section>
               <h2 className="text-sm tracking-[0.15em] text-ivory/55 uppercase">All hosts</h2>
               <ul className="mt-3 divide-y divide-ivory/10">

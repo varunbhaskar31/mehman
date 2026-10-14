@@ -24,7 +24,7 @@ function daysFromNow(days: number, hour: number, minute = 0) {
 export function createSeed(): DemoState {
   const now = new Date().toISOString();
   return {
-    version: 1,
+    version: 3,
     currentUserId: null,
     profiles: [
       { id: DEMO_ADMIN_ID, email: "team@mehman.in", fullName: "Mehman team", phone: "", role: "admin", createdAt: now },
@@ -32,6 +32,9 @@ export function createSeed(): DemoState {
       { id: "user-rathore", email: "rathore@example.com", fullName: "Kavita Rathore", phone: "+91 94140 00002", role: "host", createdAt: now },
       { id: "user-sharmila", email: "sharmila@example.com", fullName: "Sharmila Sen", phone: "+91 98300 00003", role: "host", createdAt: now },
       { id: "user-lakshmi", email: "lakshmi@example.com", fullName: "Lakshmi Rao", phone: "+91 98450 00004", role: "host", createdAt: now },
+      { id: "guest-rohan", email: "rohan@example.com", fullName: "Rohan Mehta", phone: "+91 98200 11111", role: "guest", createdAt: now },
+      { id: "guest-priya", email: "priya@example.com", fullName: "Priya Iyer", phone: "+91 98410 22222", role: "guest", createdAt: now },
+      { id: "guest-sam", email: "sam@example.com", fullName: "Sam Carter", phone: "+44 7700 900123", role: "guest", createdAt: now },
       { id: "user-nasreen", email: "nasreen@example.com", fullName: "Nasreen Fatima", phone: "+91 94150 00005", role: "guest", createdAt: now },
     ],
     hosts: [
@@ -57,7 +60,29 @@ export function createSeed(): DemoState {
       { id: "s-oota-1", tableId: "table-oota", startsAt: daysFromNow(4, 12), seatsTotal: 6 },
       { id: "s-oota-2", tableId: "table-oota", startsAt: daysFromNow(11, 12), seatsTotal: 6 },
       { id: "s-dastar-1", tableId: "table-dastarkhwan", startsAt: daysFromNow(6, 20), seatsTotal: 6 },
+      // Meals that already happened, for earnings, guest history and reviews.
+      { id: "s-sadya-past-1", tableId: "table-sadya", startsAt: daysFromNow(-24, 12, 30), seatsTotal: 6 },
+      { id: "s-sadya-past-2", tableId: "table-sadya", startsAt: daysFromNow(-10, 12, 30), seatsTotal: 6 },
+      { id: "s-sadya-past-3", tableId: "table-sadya", startsAt: daysFromNow(-3, 12, 30), seatsTotal: 6 },
+      { id: "s-thali-past-1", tableId: "table-thali", startsAt: daysFromNow(-12, 19, 30), seatsTotal: 8 },
     ],
-    bookings: [],
+    bookings: [
+      { id: "b-past-1", sessionId: "s-sadya-past-1", guestId: "guest-sam", pricePerGuest: 900, partySize: 2, note: "First time in India!", status: "completed", createdAt: now },
+      { id: "b-past-2", sessionId: "s-sadya-past-1", guestId: "guest-priya", pricePerGuest: 900, partySize: 3, note: "", status: "completed", createdAt: now },
+      { id: "b-past-3", sessionId: "s-sadya-past-2", guestId: "guest-rohan", pricePerGuest: 900, partySize: 4, note: "Bringing my parents.", status: "completed", createdAt: now },
+      { id: "b-past-4", sessionId: "s-sadya-past-3", guestId: "guest-priya", pricePerGuest: 900, partySize: 2, note: "", status: "accepted", createdAt: now },
+      { id: "b-past-5", sessionId: "s-thali-past-1", guestId: "guest-rohan", pricePerGuest: 1100, partySize: 2, note: "", status: "completed", createdAt: now },
+      { id: "b-up-1", sessionId: "s-sadya-1", guestId: "guest-rohan", pricePerGuest: 900, partySize: 2, note: "My colleague is vegan, is that possible?", status: "requested", createdAt: now },
+      { id: "b-up-2", sessionId: "s-sadya-1", guestId: "guest-sam", pricePerGuest: 900, partySize: 1, note: "", status: "accepted", createdAt: now },
+    ],
+    reviews: [
+      { id: "r-1", bookingId: "b-past-1", tableId: "table-sadya", guestId: "guest-sam", rating: 5, text: "Meenakshi's mother explained every dish and the order to eat them in. The best meal of our trip by a mile.", hostReply: "You were wonderful guests. Come back for Onam!", createdAt: daysFromNow(-23, 18) },
+      { id: "r-2", bookingId: "b-past-3", tableId: "table-sadya", guestId: "guest-rohan", rating: 5, text: "My parents felt right at home. Two payasams and endless refills.", hostReply: null, createdAt: daysFromNow(-9, 20) },
+      { id: "r-3", bookingId: "b-past-5", tableId: "table-thali", guestId: "guest-rohan", rating: 4, text: "Huge, generous thali and great stories about the haveli. Go hungry.", hostReply: null, createdAt: daysFromNow(-11, 21) },
+    ],
+    notifications: [
+      { id: "n-1", userId: "user-meenakshi", title: "New request from Rohan Mehta", body: "2 guests · asks about a vegan option", href: "/host/requests", read: false, createdAt: daysFromNow(0, 9) },
+      { id: "n-2", userId: "user-meenakshi", title: "Rohan Mehta left you a review", body: "★★★★★ “My parents felt right at home.”", href: "/host/earnings", read: true, createdAt: daysFromNow(-9, 20) },
+    ],
   };
 }

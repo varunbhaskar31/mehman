@@ -2,11 +2,23 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { AccountButton } from "./account-button";
 import { MehmanLogo } from "./mehman-logo";
+import { NotificationBell } from "./notification-bell";
 
-type Page = "explore" | "how-it-works" | "our-story" | "host";
+type Page =
+  | "explore"
+  | "how-it-works"
+  | "our-story"
+  | "host"
+  | "today"
+  | "calendar"
+  | "requests"
+  | "table"
+  | "earnings";
 
 type SiteHeaderProps = {
   current?: Page;
+  // Host mode swaps the menu for the host's own sections.
+  mode?: "guest" | "host";
 };
 
 const focusRing =
@@ -19,7 +31,16 @@ const links: { page: Page; href: string; label: string }[] = [
   { page: "host", href: "/become-a-host", label: "Become a host" },
 ];
 
-export function SiteHeader({ current }: SiteHeaderProps) {
+const hostLinks: { page: Page; href: string; label: string }[] = [
+  { page: "today", href: "/host", label: "Today" },
+  { page: "calendar", href: "/host/calendar", label: "Calendar" },
+  { page: "requests", href: "/host/requests", label: "Requests" },
+  { page: "table", href: "/host/table", label: "My table" },
+  { page: "earnings", href: "/host/earnings", label: "Earnings" },
+];
+
+export function SiteHeader({ current, mode = "guest" }: SiteHeaderProps) {
+  const menu = mode === "host" ? hostLinks : links;
   return (
     <header className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-4 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] text-ivory md:grid-cols-[1fr_auto_1fr] md:px-10 md:pt-7">
       <Link
@@ -28,12 +49,17 @@ export function SiteHeader({ current }: SiteHeaderProps) {
       >
         <MehmanLogo className="h-9 w-auto" />
         Mehman
+        {mode === "host" && (
+          <span className="rounded-full bg-[#e8c08f]/15 px-2.5 py-1 font-sans text-xs text-[#e8c08f]">
+            Hosting
+          </span>
+        )}
       </Link>
 
       {/* Phones use the bottom tab bar instead. */}
       <nav aria-label="Main" className="hidden md:block">
         <ul className="flex items-center gap-7 text-sm">
-          {links.map((link) => (
+          {menu.map((link) => (
             <li key={link.page}>
               <Link
                 href={link.href}
@@ -51,7 +77,16 @@ export function SiteHeader({ current }: SiteHeaderProps) {
         </ul>
       </nav>
 
-      <div className="justify-self-end">
+      <div className="flex items-center gap-1 justify-self-end">
+        {mode === "host" && (
+          <Link
+            href="/explore"
+            className={`mr-1 hidden text-sm text-ivory/75 underline-offset-4 hover:underline sm:inline ${focusRing}`}
+          >
+            Switch to travelling
+          </Link>
+        )}
+        <NotificationBell />
         <AccountButton />
       </div>
     </header>

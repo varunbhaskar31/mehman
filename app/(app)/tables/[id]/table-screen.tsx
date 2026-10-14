@@ -11,6 +11,7 @@ import {
   formatWhen,
   SampleDataNote,
   secondaryButtonClass,
+  Stars,
 } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
 import { BackLink } from "@/app/_components/site-header";
@@ -20,6 +21,7 @@ import {
   hostForUser,
   requestBooking,
   seatsLeft,
+  tableRating,
   upcomingSessions,
   useDemoReady,
   useDemoState,
@@ -60,6 +62,7 @@ export function TableScreen({ tableId }: { tableId: string }) {
   }
 
   const city = findExploreCity(host.cityId);
+  const rating = tableRating(state, table.id);
   const sessions = upcomingSessions(state, table.id);
   const selected = sessions.find((s) => s.id === sessionId) ?? null;
   const selectedSeats = selected ? seatsLeft(state, selected) : table.maxGuests;
@@ -124,6 +127,11 @@ export function TableScreen({ tableId }: { tableId: string }) {
             {table.cuisine} · {vegLabel[table.veg]}
           </p>
           <h1 className="mt-1 font-serif text-3xl leading-tight md:text-4xl">{table.title}</h1>
+          {rating.count > 0 && (
+            <a href="#reviews" className={`mt-1 inline-flex items-center gap-2 rounded text-sm text-ivory/75 ${focusRing}`}>
+              <Stars rating={rating.average} /> {rating.average.toFixed(1)} · {rating.count} {rating.count === 1 ? "review" : "reviews"}
+            </a>
+          )}
           <p className="mt-2 text-lg">
             {formatPrice(table.pricePerGuest)} <span className="text-sm text-ivory/60">per guest · pay your host at the meal (UPI or cash)</span>
           </p>
@@ -143,6 +151,29 @@ export function TableScreen({ tableId }: { tableId: string }) {
           <p className="mt-2 leading-relaxed text-ivory/80">{table.menu}</p>
           <p className="mt-3 text-sm text-ivory/55">Up to {table.maxGuests} guests · Menus change with the season.</p>
         </section>
+
+        {rating.count > 0 && (
+          <section id="reviews" className="scroll-mt-24">
+            <h2 className="font-serif text-2xl">What guests said</h2>
+            <ul className="mt-3 space-y-3">
+              {rating.reviews.map((review) => (
+                <li key={review.id} className={cardClass}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium">{state.profiles.find((p) => p.id === review.guestId)?.fullName.split(" ")[0]}</p>
+                    <Stars rating={review.rating} />
+                  </div>
+                  <p className="mt-2 leading-relaxed text-ivory/85">&ldquo;{review.text}&rdquo;</p>
+                  {review.hostReply && (
+                    <p className="mt-3 border-l-2 border-[#e8c08f]/50 pl-3 text-sm text-ivory/70">
+                      <span className="text-ivory/50">{host.displayName}: </span>
+                      {review.hostReply}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section aria-labelledby={`${uid}-dates`}>
           <h2 id={`${uid}-dates`} className="font-serif text-2xl">Choose a date</h2>

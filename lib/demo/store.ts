@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { createSeed } from "./seed";
 import type {
+  AppNotification,
   Booking,
   BookingStatus,
   DemoState,
@@ -10,6 +11,7 @@ import type {
   DiningTable,
   Host,
   Profile,
+  Review,
   TableStatus,
 } from "./types";
 
@@ -22,13 +24,15 @@ const STORAGE_KEY = "mehman-demo-v1";
 // Nothing is known on the server, so pages render their signed-out,
 // empty shell first and fill in once the browser has loaded the data.
 const serverState: DemoState = {
-  version: 1,
+  version: 3,
   currentUserId: null,
   profiles: [],
   hosts: [],
   tables: [],
   sessions: [],
   bookings: [],
+  reviews: [],
+  notifications: [],
 };
 
 let state: DemoState | null = null;
@@ -40,7 +44,8 @@ function load(): DemoState {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as DemoState;
-      if (parsed.version === 1) return parsed;
+      // Older preview data is simply replaced with fresh samples.
+      if (parsed.version === 3) return parsed;
     }
   } catch (error) {
     console.error("[demo] Couldn't read saved data", error);
@@ -104,6 +109,29 @@ type Result<T = void> = { error: string } | { ok: true; value: T };
 
 const fail = (error: string): { error: string } => ({ error });
 
+// In-app notifications. WhatsApp, SMS and email will hang off the same
+// events once a messaging service is connected.
+function notify(
+  s: DemoState,
+  userId: string,
+  title: string,
+  body: string,
+  href: string,
+): DemoState {
+  const notification: AppNotification = {
+    id: id("note"),
+    userId,
+    title,
+    body,
+    href,
+    read: false,
+    createdAt: new Date().toISOString(),
+  };
+  return { ...s, notifications: [notification, ...s.notifications] };
+}
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
 // ------------------------------------------------------------ selectors
 
 export function currentUser(s: DemoState): Profile | null {
@@ -148,6 +176,18 @@ export function approvedTablesInCity(s: DemoState, cityId: string) {
       host.cityId === cityId
     );
   });
+}
+
+export function tableRating(s: DemoState, tableId: string) {
+  const reviews = s.reviews.filter((r) => r.tableId === tableId);
+  const average = reviews.length
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : 0;
+  return { average, count: reviews.length, reviews };
+}
+
+export function myNotifications(s: DemoState) {
+  return s.notifications.filter((n) => n.userId === s.currentUserId);
 }
 
 // Everything a booking screen needs, joined together.
@@ -337,6 +377,41 @@ export function reviewHost(hostId: string, approve: boolean, note: string): Resu
       p.id === host.userId && approve && p.role === "guest" ? { ...p, role: "host" } : p,
     ),
   }));
+  setState((current) =>
+    notify(
+      current,
+      host.userId,
+      approve ? "Your table is live!" : "Your table wasn't approved",
+      approve ? "Guests can now find and book it." : note.trim(),
+      "/host",
+    ),
+  );
+  return { ok: true, value: undefined };
+}
+
+// Re-checks a live host's table after they change its price or photos.
+export function reviewTableChanges(tableId: string, approve: boolean, note: string): Result {
+  const s = getState();
+  if (currentUser(s)?.role !== "admin") return fail("Only the Mehman team can review tables.");
+  const table = s.tables.find((t) => t.id === tableId);
+  const host = s.hosts.find((h) => h.id === table?.hostId);
+  if (!table || !host || table.status !== "pending") return fail("Nothing to review here.");
+  setState((current) =>
+    notify(
+      {
+        ...current,
+        tables: current.tables.map((t) =>
+          t.id === tableId
+            ? { ...t, status: approve ? "approved" : "rejected", reviewNote: note.trim() || null }
+            : t,
+        ),
+      },
+      host.userId,
+      approve ? "Your changes are live" : "Your changes weren't approved",
+      approve ? `${table.title} is bookable again.` : note.trim(),
+      "/host/table",
+    ),
+  );
   return { ok: true, value: undefined };
 }
 
@@ -362,11 +437,21 @@ export function requestBooking(sessionId: string, partySize: number, note: strin
     sessionId,
     guestId: me.id,
     partySize,
+    pricePerGuest: table.pricePerGuest,
     note: note.trim(),
     status: "requested",
     createdAt: new Date().toISOString(),
   };
-  setState((current) => ({ ...current, bookings: [...current.bookings, booking] }));
+  const host = s.hosts.find((h) => h.id === table.hostId)!;
+  setState((current) =>
+    notify(
+      { ...current, bookings: [...current.bookings, booking] },
+      host.userId,
+      `New request from ${me.fullName || "a guest"}`,
+      `${plural(partySize, "guest")} · ${new Date(session.startsAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`,
+      "/host/requests",
+    ),
+  );
   return { ok: true, value: booking };
 }
 
@@ -375,19 +460,127 @@ export function setBookingStatus(bookingId: string, next: BookingStatus): Result
   const me = currentUser(s);
   const booking = s.bookings.find((b) => b.id === bookingId);
   if (!me || !booking) return fail("Booking not found.");
-  const { host } = bookingDetails(s, booking);
+  const { host, table, session, guest } = bookingDetails(s, booking);
   const isHost = host.userId === me.id;
   const isGuest = booking.guestId === me.id;
+  const started = hasStarted(session.startsAt);
 
   const allowed =
     (isHost && booking.status === "requested" && (next === "accepted" || next === "declined")) ||
-    (isHost && booking.status === "accepted" && (next === "completed" || next === "cancelled")) ||
-    (isGuest && (booking.status === "requested" || booking.status === "accepted") && next === "cancelled");
+    (isHost && booking.status === "accepted" && started && (next === "completed" || next === "no_show")) ||
+    (isHost && booking.status === "accepted" && !started && next === "cancelled") ||
+    (isGuest && (booking.status === "requested" || booking.status === "accepted") && !started && next === "cancelled");
   if (!allowed) return fail("That change isn't allowed.");
 
+  setState((current) => {
+    let updated: DemoState = {
+      ...current,
+      bookings: current.bookings.map((b) => (b.id === bookingId ? { ...b, status: next } : b)),
+    };
+    if (next === "accepted") {
+      updated = notify(updated, guest.id, `${host.displayName} accepted your request`, `${table.title} · the address is now in your trip`, "/trips");
+    } else if (next === "declined") {
+      updated = notify(updated, guest.id, `${host.displayName} can't host you on this date`, "Try another date or table.", "/trips");
+    } else if (next === "cancelled" && isGuest) {
+      updated = notify(updated, host.userId, `${guest.fullName || "A guest"} cancelled`, plural(booking.partySize, "seat") + " freed up", "/host/requests");
+    } else if (next === "cancelled" && isHost) {
+      updated = notify(updated, guest.id, `${host.displayName} had to cancel`, "We're sorry. Try another date or table.", "/trips");
+    } else if (next === "completed") {
+      updated = notify(updated, guest.id, `How was ${table.title}?`, `Leave a review for ${host.displayName}`, "/trips");
+    }
+    return updated;
+  });
+  return { ok: true, value: undefined };
+}
+
+export function addSessions(tableId: string, startsAts: string[], seats: number): Result<number> {
+  let added = 0;
+  for (const startsAt of startsAts) {
+    const result = addSession(tableId, startsAt, seats);
+    if ("error" in result) return added ? { ok: true, value: added } : result;
+    added += 1;
+  }
+  return { ok: true, value: added };
+}
+
+export type TableEdits = Pick<
+  DiningTable,
+  "title" | "story" | "menu" | "cuisine" | "veg" | "pricePerGuest" | "maxGuests" | "photos"
+>;
+
+// Wording changes go live straight away; a new price or new photos on a
+// live table go back to Mehman for a quick look first.
+export function updateTable(tableId: string, edits: TableEdits): Result<{ needsReview: boolean }> {
+  const s = getState();
+  const table = s.tables.find((t) => t.id === tableId);
+  const myHost = hostForUser(s, s.currentUserId);
+  if (!table || table.hostId !== myHost?.id) return fail("This isn't your table.");
+  const photosChanged = edits.photos.join("|") !== table.photos.join("|");
+  const priceChanged = edits.pricePerGuest !== table.pricePerGuest;
+  const needsReview = (table.status === "approved" || table.status === "paused") && (photosChanged || priceChanged);
   setState((current) => ({
     ...current,
-    bookings: current.bookings.map((b) => (b.id === bookingId ? { ...b, status: next } : b)),
+    tables: current.tables.map((t) =>
+      t.id === tableId
+        ? { ...t, ...edits, status: needsReview || t.status === "rejected" ? "pending" : t.status }
+        : t,
+    ),
+  }));
+  return { ok: true, value: { needsReview } };
+}
+
+export function addReview(bookingId: string, rating: number, text: string): Result {
+  const s = getState();
+  const me = currentUser(s);
+  const booking = s.bookings.find((b) => b.id === bookingId);
+  if (!me || booking?.guestId !== me.id) return fail("Booking not found.");
+  if (booking.status !== "completed") return fail("You can review a meal once it has happened.");
+  if (s.reviews.some((r) => r.bookingId === bookingId)) return fail("You've already reviewed this meal.");
+  if (rating < 1 || rating > 5) return fail("Please choose 1 to 5 stars.");
+  const { table, host } = bookingDetails(s, booking);
+  const review: Review = {
+    id: id("review"),
+    bookingId,
+    tableId: table.id,
+    guestId: me.id,
+    rating,
+    text: text.trim(),
+    hostReply: null,
+    createdAt: new Date().toISOString(),
+  };
+  setState((current) =>
+    notify(
+      { ...current, reviews: [review, ...current.reviews] },
+      host.userId,
+      `${me.fullName || "A guest"} left you a review`,
+      `${"★".repeat(rating)}${text.trim() ? ` “${text.trim().slice(0, 60)}”` : ""}`,
+      "/host/earnings",
+    ),
+  );
+  return { ok: true, value: undefined };
+}
+
+export function replyToReview(reviewId: string, reply: string): Result {
+  const s = getState();
+  const review = s.reviews.find((r) => r.id === reviewId);
+  const table = s.tables.find((t) => t.id === review?.tableId);
+  if (!review || !table || table.hostId !== hostForUser(s, s.currentUserId)?.id) {
+    return fail("You can only reply to reviews of your own table.");
+  }
+  if (reply.trim().length < 2) return fail("Write a short reply.");
+  setState((current) => ({
+    ...current,
+    reviews: current.reviews.map((r) => (r.id === reviewId ? { ...r, hostReply: reply.trim() } : r)),
   }));
   return { ok: true, value: undefined };
+}
+
+export function markNotificationsRead() {
+  const userId = getState().currentUserId;
+  setState((current) => ({
+    ...current,
+    notifications: current.notifications.map((n) =>
+      n.userId === userId && !n.read ? { ...n, read: true } : n,
+    ),
+  }));
 }

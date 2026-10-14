@@ -22,6 +22,7 @@ import {
   useDemoState,
 } from "@/lib/demo/store";
 import type { VegType } from "@/lib/demo/types";
+import { resizePhoto } from "@/lib/photos";
 
 const LANGUAGES = ["Hindi", "English", "Bengali", "Kannada", "Malayalam", "Marathi", "Tamil", "Telugu", "Urdu", "Gujarati", "Punjabi", "Marwari"];
 const STEPS = ["About you", "Your home", "Your table", "Photos", "Dates", "Review"] as const;
@@ -87,28 +88,6 @@ function validateStep(step: number, d: Draft): Errors {
   if (step === 3 && d.photos.length === 0) e.photos = "Add at least one photo of your food or table.";
   if (step === 4 && d.dates.length === 0) e.dates = "Add at least one date you can host.";
   return e;
-}
-
-// Shrinks a photo in the browser before it is stored.
-function resizePhoto(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new window.Image();
-    img.onload = () => {
-      const scale = Math.min(1, 1000 / Math.max(img.width, img.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/jpeg", 0.72));
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Couldn't read that photo."));
-    };
-    img.src = url;
-  });
 }
 
 const vegOptions: { id: VegType; label: string }[] = [
