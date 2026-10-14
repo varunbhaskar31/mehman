@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { currentUser, useDemoReady, useDemoState } from "@/lib/demo/store";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import {
+  currentUser,
+  hostForUser,
+  myNotifications,
+  signOut,
+  useDemoReady,
+  useDemoState,
+} from "@/lib/demo/store";
+import type { Profile } from "@/lib/demo/types";
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ivory";
@@ -12,8 +22,8 @@ function initials(name: string, email: string) {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
 }
 
-// "Log in" for visitors; the visitor's initials, linking to their account,
-// once signed in.
+// "Log in" for visitors; once signed in, the visitor's initials open a
+// menu with Trips, Inbox, Profile and hosting.
 export function AccountButton() {
   const ready = useDemoReady();
   const user = currentUser(useDemoState());
@@ -31,13 +41,82 @@ export function AccountButton() {
     );
   }
 
+  return <AccountMenu user={user} />;
+}
+
+// Desktop: the avatar opens a menu with everything personal, like
+// Airbnb's. (Phones use the bottom tabs and don't show this button.)
+function AccountMenu({ user }: { user: Profile }) {
+  const state = useDemoState();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const isHost = Boolean(hostForUser(state, user.id));
+  const unread = myNotifications(state).filter((n) => !n.read).length;
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent ? event.key === "Escape" : !rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+
+  const items = [
+    { href: "/trips", label: "Trips" },
+    { href: "/inbox", label: unread ? `Inbox (${unread} new)` : "Inbox" },
+    { href: "/profile", label: "Profile" },
+    { href: isHost ? "/host" : "/become-a-host", label: isHost ? "Switch to hosting" : "Become a host" },
+    ...(user.role === "admin" ? [{ href: "/admin", label: "Review hosts" }] : []),
+  ];
+
   return (
-    <Link
-      href="/profile"
-      aria-label={`Your profile (${user.fullName || user.email})`}
-      className={`grid size-11 place-items-center rounded-full bg-[#e8c08f] font-medium text-pine ${focusRing}`}
-    >
-      {initials(user.fullName, user.email)}
-    </Link>
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Menu for ${user.fullName || user.email}`}
+        onClick={() => setOpen((o) => !o)}
+        className={`grid size-11 place-items-center rounded-full bg-[#e8c08f] font-medium text-pine ${focusRing}`}
+      >
+        {initials(user.fullName, user.email)}
+      </button>
+      {open && (
+        <div role="menu" className="absolute top-full right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-ivory/10 bg-[#1b2a1c] py-2 shadow-2xl">
+          <p className="truncate px-4 pt-1 pb-2 text-xs text-ivory/50">{user.fullName || user.email}</p>
+          {items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2.5 text-sm text-ivory hover:bg-ivory/10 focus-visible:bg-ivory/10 focus-visible:outline-none"
+            >
+              {item.label}
+            </Link>
+          ))}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              signOut();
+              router.replace("/explore");
+            }}
+            className="mt-1 block w-full border-t border-ivory/10 px-4 py-2.5 text-left text-sm text-ivory/75 hover:bg-ivory/10 focus-visible:bg-ivory/10 focus-visible:outline-none"
+          >
+            Log out
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
