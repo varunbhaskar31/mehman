@@ -146,7 +146,7 @@ function TripCard({ state, booking }: { state: DemoState; booking: Booking }) {
   );
 }
 
-export function TripsScreen() {
+export function BookingsScreen() {
   const state = useDemoState();
 
   return (
@@ -165,9 +165,9 @@ export function TripsScreen() {
 
         return (
           <div className="space-y-8">
-            <PageTitle kicker="My trips" title="Your seats at the table" />
+            <PageTitle kicker="My bookings" title="Your seats at the table" />
             {mine.length === 0 ? (
-              <EmptyState title="No trips yet" action={<Link href="/explore" className={primaryButtonClass}>Find a table</Link>}>
+              <EmptyState title="No bookings yet" action={<Link href="/explore" className={primaryButtonClass}>Find a table</Link>}>
                 When you request a seat at a family&rsquo;s table, it shows up here.
               </EmptyState>
             ) : (

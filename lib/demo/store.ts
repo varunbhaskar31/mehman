@@ -24,7 +24,7 @@ const STORAGE_KEY = "mehman-demo-v1";
 // Nothing is known on the server, so pages render their signed-out,
 // empty shell first and fill in once the browser has loaded the data.
 const serverState: DemoState = {
-  version: 3,
+  version: 4,
   currentUserId: null,
   profiles: [],
   hosts: [],
@@ -33,6 +33,7 @@ const serverState: DemoState = {
   bookings: [],
   reviews: [],
   notifications: [],
+  saved: [],
 };
 
 let state: DemoState | null = null;
@@ -45,7 +46,7 @@ function load(): DemoState {
     if (raw) {
       const parsed = JSON.parse(raw) as DemoState;
       // Older preview data is simply replaced with fresh samples.
-      if (parsed.version === 3) return parsed;
+      if (parsed.version === 4) return parsed;
     }
   } catch (error) {
     console.error("[demo] Couldn't read saved data", error);
@@ -478,15 +479,15 @@ export function setBookingStatus(bookingId: string, next: BookingStatus): Result
       bookings: current.bookings.map((b) => (b.id === bookingId ? { ...b, status: next } : b)),
     };
     if (next === "accepted") {
-      updated = notify(updated, guest.id, `${host.displayName} accepted your request`, `${table.title} · the address is now in your trip`, "/trips");
+      updated = notify(updated, guest.id, `${host.displayName} accepted your request`, `${table.title} · the address is now in your trip`, "/bookings");
     } else if (next === "declined") {
-      updated = notify(updated, guest.id, `${host.displayName} can't host you on this date`, "Try another date or table.", "/trips");
+      updated = notify(updated, guest.id, `${host.displayName} can't host you on this date`, "Try another date or table.", "/bookings");
     } else if (next === "cancelled" && isGuest) {
       updated = notify(updated, host.userId, `${guest.fullName || "A guest"} cancelled`, plural(booking.partySize, "seat") + " freed up", "/host/requests");
     } else if (next === "cancelled" && isHost) {
-      updated = notify(updated, guest.id, `${host.displayName} had to cancel`, "We're sorry. Try another date or table.", "/trips");
+      updated = notify(updated, guest.id, `${host.displayName} had to cancel`, "We're sorry. Try another date or table.", "/bookings");
     } else if (next === "completed") {
-      updated = notify(updated, guest.id, `How was ${table.title}?`, `Leave a review for ${host.displayName}`, "/trips");
+      updated = notify(updated, guest.id, `How was ${table.title}?`, `Leave a review for ${host.displayName}`, "/bookings");
     }
     return updated;
   });
@@ -583,4 +584,50 @@ export function markNotificationsRead() {
       n.userId === userId && !n.read ? { ...n, read: true } : n,
     ),
   }));
+}
+
+// ---------------------------------------------------------------- saved
+
+export function isSaved(s: DemoState, tableId: string) {
+  return s.saved.some((x) => x.userId === s.currentUserId && x.tableId === tableId);
+}
+
+export function mySavedTables(s: DemoState) {
+  return s.saved
+    .filter((x) => x.userId === s.currentUserId)
+    .sort((a, b) => b.savedAt.localeCompare(a.savedAt))
+    .flatMap((x) => s.tables.find((t) => t.id === x.tableId) ?? []);
+}
+
+export function toggleSaved(tableId: string): Result<boolean> {
+  const s = getState();
+  const me = currentUser(s);
+  if (!me) return fail("Log in to save tables.");
+  const saved = isSaved(s, tableId);
+  setState((current) => ({
+    ...current,
+    saved: saved
+      ? current.saved.filter((x) => !(x.userId === me.id && x.tableId === tableId))
+      : [...current.saved, { userId: me.id, tableId, savedAt: new Date().toISOString() }],
+  }));
+  return { ok: true, value: !saved };
+}
+
+// The city a visitor last chose on Explore, so Experiences opens there.
+const CITY_KEY = "mehman-city";
+
+export function rememberCity(cityId: string) {
+  try {
+    window.localStorage.setItem(CITY_KEY, cityId);
+  } catch {
+    // Private browsing: Experiences falls back to the first city.
+  }
+}
+
+export function lastCity(): string | null {
+  try {
+    return window.localStorage.getItem(CITY_KEY);
+  } catch {
+    return null;
+  }
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { currentUser, hostForUser, myNotifications, useDemoState } from "@/lib/demo/store";
+import { currentUser, hostForUser, useDemoState } from "@/lib/demo/store";
 
 const iconProps = {
   viewBox: "0 0 24 24",
@@ -29,10 +29,16 @@ const icons: Record<string, ReactNode> = {
       <path d="M8 3v4M16 3v4M4 10h16" />
     </svg>
   ),
-  inbox: (
+  experiences: (
     <svg {...iconProps}>
-      <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z" />
-      <path d="M10 20a2 2 0 0 0 4 0" />
+      <path d="M3 13h18" />
+      <path d="M5 13a7 7 0 0 1 14 0" />
+      <path d="M12 6V4.5M4 17h16" />
+    </svg>
+  ),
+  saved: (
+    <svg {...iconProps}>
+      <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
     </svg>
   ),
   account: (
@@ -74,7 +80,6 @@ export function MobileTabBar() {
   const state = useDemoState();
   const user = currentUser(state);
   const host = hostForUser(state, user?.id);
-  const unread = myNotifications(state).filter((n) => !n.read).length;
 
   const hostMode = pathname === "/host" || pathname.startsWith("/host/");
   const pendingRequests = host
@@ -87,19 +92,22 @@ export function MobileTabBar() {
       ).length
     : 0;
 
-  const tabs: { key: string; href: string; label: string; match: string[]; badge?: number }[] = hostMode
+  const under = (...paths: string[]) => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+  const tabs: { key: string; icon: string; href: string; label: string; current: boolean; badge?: number }[] = hostMode
     ? [
-        { key: "today", href: "/host", label: "Today", match: ["/host"] },
-        { key: "trips", href: "/host/calendar", label: "Calendar", match: ["/host/calendar"] },
-        { key: "requests", href: "/host/requests", label: "Requests", match: ["/host/requests"], badge: pendingRequests },
-        { key: "table", href: "/host/table", label: "My table", match: ["/host/table"] },
-        { key: "earnings", href: "/host/earnings", label: "Earnings", match: ["/host/earnings"] },
+        { key: "today", icon: "today", href: "/host", label: "Today", current: pathname === "/host" },
+        { key: "calendar", icon: "trips", href: "/host/calendar", label: "Calendar", current: under("/host/calendar") },
+        { key: "requests", icon: "requests", href: "/host/requests", label: "Requests", current: under("/host/requests"), badge: pendingRequests },
+        { key: "table", icon: "table", href: "/host/table", label: "My table", current: under("/host/table") },
+        { key: "earnings", icon: "earnings", href: "/host/earnings", label: "Earnings", current: under("/host/earnings") },
       ]
     : [
-        { key: "explore", href: "/explore", label: "Explore", match: ["/explore", "/tables"] },
-        { key: "trips", href: "/trips", label: "Trips", match: ["/trips"] },
-        { key: "inbox", href: "/inbox", label: "Inbox", match: ["/inbox"], badge: unread },
-        { key: "account", href: "/profile", label: "Profile", match: ["/profile", "/login", "/admin", "/become-a-host", "/how-it-works", "/our-story"] },
+        { key: "explore", icon: "explore", href: "/explore", label: "Explore", current: pathname === "/explore" },
+        // Opens the city chosen last on Explore.
+        { key: "experiences", icon: "experiences", href: "/experiences", label: "Experiences", current: pathname.startsWith("/explore/") || under("/experiences", "/tables") },
+        { key: "saved", icon: "saved", href: "/saved", label: "Saved", current: under("/saved") },
+        { key: "profile", icon: "account", href: "/profile", label: "Profile", current: under("/profile", "/login", "/admin", "/become-a-host", "/how-it-works", "/our-story", "/bookings", "/updates") },
       ];
 
   return (
@@ -115,10 +123,7 @@ export function MobileTabBar() {
       >
         <ul className={`grid ${hostMode ? "grid-cols-5" : "grid-cols-4"}`}>
           {tabs.map((tab) => {
-            // "/host" (Today) matches exactly; other tabs match their section.
-            const isCurrent = tab.match.some((path) =>
-              path === "/host" ? pathname === path : pathname === path || pathname.startsWith(`${path}/`),
-            );
+            const isCurrent = tab.current;
             return (
               <li key={tab.key}>
                 <Link
@@ -129,7 +134,7 @@ export function MobileTabBar() {
                   }`}
                 >
                   <span className="relative">
-                    {icons[tab.key]}
+                    {icons[tab.icon]}
                     {tab.badge ? (
                       <span className="absolute -top-1 -right-2 grid min-w-4 place-items-center rounded-full bg-terracotta px-1 text-[10px] leading-4 text-ivory">
                         {tab.badge}

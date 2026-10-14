@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
+import { SaveButton } from "@/app/_components/save-button";
 import { cardClass, focusRing, formatPrice, formatWhen } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
 import {
   approvedTablesInCity,
+  rememberCity,
   seatsLeft,
   upcomingSessions,
   useDemoReady,
@@ -18,6 +21,8 @@ const vegLabel = { veg: "Vegetarian", non_veg: "Non-vegetarian", both: "Veg & no
 export function CityTables({ cityId, cityName }: { cityId: string; cityName: string }) {
   const state = useDemoState();
   const ready = useDemoReady();
+  // The Experiences tab reopens this city next time.
+  useEffect(() => rememberCity(cityId), [cityId]);
   if (!ready) return <div className="mt-8 h-64" aria-hidden="true" />;
 
   const tables = approvedTablesInCity(state, cityId);
@@ -44,7 +49,7 @@ export function CityTables({ cityId, cityName }: { cityId: string; cityName: str
           const host = state.hosts.find((h) => h.id === table.hostId)!;
           const next = upcomingSessions(state, table.id).find((s) => seatsLeft(state, s) > 0);
           return (
-            <li key={table.id}>
+            <li key={table.id} className="relative">
               <Link href={`/tables/${table.id}`} className={`group block rounded-2xl ${focusRing}`}>
                 <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-ivory/5">
                   <Image src={table.photos[0]} alt="" fill sizes="(min-width: 768px) 420px, 92vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -66,6 +71,9 @@ export function CityTables({ cityId, cityName }: { cityId: string; cityName: str
                   {next ? `Next: ${formatWhen(next.startsAt)}` : "No open dates right now"}
                 </p>
               </Link>
+              <div className="absolute top-3 right-3">
+                <SaveButton tableId={table.id} title={table.title} />
+              </div>
             </li>
           );
         })}

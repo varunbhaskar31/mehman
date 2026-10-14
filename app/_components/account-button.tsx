@@ -23,7 +23,7 @@ function initials(name: string, email: string) {
 }
 
 // "Log in" for visitors; once signed in, the visitor's initials open a
-// menu with Trips, Inbox, Profile and hosting.
+// menu with bookings, saved tables, updates, profile and hosting.
 export function AccountButton() {
   const ready = useDemoReady();
   const user = currentUser(useDemoState());
@@ -70,8 +70,9 @@ function AccountMenu({ user }: { user: Profile }) {
   }, [open]);
 
   const items = [
-    { href: "/trips", label: "Trips" },
-    { href: "/inbox", label: unread ? `Inbox (${unread} new)` : "Inbox" },
+    { href: "/bookings", label: "My bookings" },
+    { href: "/saved", label: "Saved" },
+    { href: "/updates", label: unread ? `Updates (${unread} new)` : "Updates" },
     { href: "/profile", label: "Profile" },
     { href: isHost ? "/host" : "/become-a-host", label: isHost ? "Switch to hosting" : "Become a host" },
     ...(user.role === "admin" ? [{ href: "/admin", label: "Review hosts" }] : []),

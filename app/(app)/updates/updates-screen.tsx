@@ -36,12 +36,12 @@ function upcomingReminders(state: DemoState) {
     })
     .map(({ session, booking, table, host, guest }) =>
       booking.guestId === me.id
-        ? { id: booking.id, title: `Tomorrow: ${table.title}`, body: `${formatWhen(session.startsAt)} at ${host.displayName}`, href: "/trips" }
+        ? { id: booking.id, title: `Tomorrow: ${table.title}`, body: `${formatWhen(session.startsAt)} at ${host.displayName}`, href: "/bookings" }
         : { id: booking.id, title: `Guests tomorrow: ${guest.fullName}`, body: `${booking.partySize} guests · ${formatWhen(session.startsAt)}`, href: "/host" },
     );
 }
 
-export function InboxScreen() {
+export function UpdatesScreen() {
   const state = useDemoState();
   const notifications = myNotifications(state);
   const hasUnread = notifications.some((n) => !n.read);
@@ -59,7 +59,7 @@ export function InboxScreen() {
         const reminders = upcomingReminders(state);
         return (
           <div className="space-y-6">
-            <PageTitle kicker="Inbox" title="What's new" />
+            <PageTitle kicker="Updates" title="What's new" />
             {reminders.length > 0 && (
               <ul className="space-y-2">
                 {reminders.map((r) => (

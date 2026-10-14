@@ -24,7 +24,7 @@ function daysFromNow(days: number, hour: number, minute = 0) {
 export function createSeed(): DemoState {
   const now = new Date().toISOString();
   return {
-    version: 3,
+    version: 4,
     currentUserId: null,
     profiles: [
       { id: DEMO_ADMIN_ID, email: "team@mehman.in", fullName: "Mehman team", phone: "", role: "admin", createdAt: now },
@@ -80,6 +80,7 @@ export function createSeed(): DemoState {
       { id: "r-2", bookingId: "b-past-3", tableId: "table-sadya", guestId: "guest-rohan", rating: 5, text: "My parents felt right at home. Two payasams and endless refills.", hostReply: null, createdAt: daysFromNow(-9, 20) },
       { id: "r-3", bookingId: "b-past-5", tableId: "table-thali", guestId: "guest-rohan", rating: 4, text: "Huge, generous thali and great stories about the haveli. Go hungry.", hostReply: null, createdAt: daysFromNow(-11, 21) },
     ],
+    saved: [],
     notifications: [
       { id: "n-1", userId: "user-meenakshi", title: "New request from Rohan Mehta", body: "2 guests · asks about a vegan option", href: "/host/requests", read: false, createdAt: daysFromNow(0, 9) },
       { id: "n-2", userId: "user-meenakshi", title: "Rohan Mehta left you a review", body: "★★★★★ “My parents felt right at home.”", href: "/host/earnings", read: true, createdAt: daysFromNow(-9, 20) },

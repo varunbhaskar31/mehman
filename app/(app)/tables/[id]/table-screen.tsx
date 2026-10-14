@@ -14,6 +14,7 @@ import {
   Stars,
 } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
+import { SaveButton } from "@/app/_components/save-button";
 import { BackLink } from "@/app/_components/site-header";
 import { exploreCityHref, findExploreCity } from "@/data/experiences";
 import {
@@ -91,7 +92,7 @@ export function TableScreen({ tableId }: { tableId: string }) {
             {partySize} {partySize === 1 ? "seat" : "seats"} on {formatWhen(selected.startsAt)}. Hosts usually reply within a day. We&rsquo;ll share the address once they accept.
           </p>
           <div className="mt-7 flex flex-col items-center gap-3">
-            <Link href="/trips" className={primaryButtonClass}>See my trips</Link>
+            <Link href="/bookings" className={primaryButtonClass}>See my bookings</Link>
             <Link href={city ? exploreCityHref(city) : "/explore"} className={`rounded text-sm text-ivory/70 underline underline-offset-4 ${focusRing}`}>
               Keep exploring
             </Link>
@@ -103,8 +104,9 @@ export function TableScreen({ tableId }: { tableId: string }) {
 
   return (
     <div className="pb-28 md:pb-0">
-      <div className="px-4 md:px-0">
+      <div className="flex items-center justify-between px-4 md:px-0">
         <BackLink href={city ? exploreCityHref(city) : "/explore"}>{city?.name ?? "Explore"}</BackLink>
+        {table.status === "approved" && <SaveButton tableId={table.id} title={table.title} />}
       </div>
 
       {/* Photos: swipe on phones. */}

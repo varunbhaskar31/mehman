@@ -25,6 +25,7 @@ const LOCATE = "__locate";
 
 const navLinks = [
   { href: "/explore", label: "Explore", current: true },
+  { href: "/experiences", label: "Experiences" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/our-story", label: "Our story" },
 ];
@@ -186,6 +187,9 @@ export function ExploreScreen() {
             <ChevronIcon className="size-4 shrink-0 opacity-80" />
             <CitySelect city={city} label="Dining city" onChange={changeCity} />
           </div>
+          <span className="md:hidden">
+            <NotificationBell />
+          </span>
           {/* Phones reach these through the bottom tabs. */}
           <div className="explore-header-account">
             <NotificationBell />

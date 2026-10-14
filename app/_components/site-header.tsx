@@ -7,6 +7,7 @@ import { NotificationBell } from "./notification-bell";
 
 type Page =
   | "explore"
+  | "experiences"
   | "how-it-works"
   | "our-story"
   | "host"
@@ -27,6 +28,7 @@ const focusRing =
 
 const travellingLinks: { page: Page; href: string; label: string }[] = [
   { page: "explore", href: "/explore", label: "Explore" },
+  { page: "experiences", href: "/experiences", label: "Experiences" },
   { page: "how-it-works", href: "/how-it-works", label: "How it works" },
   { page: "our-story", href: "/our-story", label: "Our story" },
 ];
@@ -81,6 +83,11 @@ export function SiteHeader({ current, mode = "travelling" }: SiteHeaderProps) {
           ))}
         </ul>
       </nav>
+
+      {/* Phones: just the updates bell; the tabs do the rest. */}
+      <div className="md:hidden">
+        <NotificationBell />
+      </div>
 
       <div className="hidden items-center gap-2 md:flex">
         {mode === "host" ? (

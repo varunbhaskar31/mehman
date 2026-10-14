@@ -95,8 +95,14 @@ export type AppNotification = {
   createdAt: string;
 };
 
+export type SavedTable = {
+  userId: string;
+  tableId: string;
+  savedAt: string;
+};
+
 export type DemoState = {
-  version: 3;
+  version: 4;
   currentUserId: string | null;
   profiles: Profile[];
   hosts: Host[];
@@ -105,4 +111,5 @@ export type DemoState = {
   bookings: Booking[];
   reviews: Review[];
   notifications: AppNotification[];
+  saved: SavedTable[];
 };

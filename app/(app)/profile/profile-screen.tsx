@@ -203,6 +203,13 @@ export function ProfileScreen() {
             </div>
           </div>
 
+          <RowList
+            rows={[
+              { href: "/bookings", label: "My bookings", detail: "Seats you've requested and meals you've had" },
+              { href: "/saved", label: "Saved", detail: "Tables you bookmarked" },
+              { href: "/updates", label: "Updates", detail: "Replies from hosts and reminders" },
+            ]}
+          />
           <HostingCard user={me} />
           <PersonalInfo key={me.id} user={me} />
           {me.role === "admin" && (

@@ -22,7 +22,9 @@ const nextConfig: NextConfig = {
       },
       // Renamed pages.
       { source: "/account", destination: "/profile", permanent: false },
-      { source: "/notifications", destination: "/inbox", permanent: false },
+      { source: "/notifications", destination: "/updates", permanent: false },
+      { source: "/inbox", destination: "/updates", permanent: false },
+      { source: "/trips", destination: "/bookings", permanent: false },
       // The illustrative concept pages were replaced by real family tables.
       { source: "/experiences/:slug", destination: "/explore", permanent: false },
     ];
