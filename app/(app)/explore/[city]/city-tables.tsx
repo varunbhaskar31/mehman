@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { cardClass, focusRing, formatPrice, formatWhen } from "@/app/_components/app-ui";
+import { primaryButtonClass } from "@/app/_components/fields";
 import {
   approvedTablesInCity,
   seatsLeft,
@@ -24,24 +25,21 @@ export function CityTables({ cityId, cityName }: { cityId: string; cityName: str
   if (tables.length === 0) {
     return (
       <div className={`${cardClass} mt-8`}>
-        <p className="font-serif text-2xl">No family tables in {cityName} yet</p>
+        <p className="font-serif text-2xl">Hosts coming soon</p>
         <p className="mt-1 text-sm text-ivory/65">
-          We&rsquo;re meeting host families here now. Cook from {cityName}?{" "}
-          <Link href="/become-a-host" className={`rounded text-ivory underline underline-offset-4 ${focusRing}`}>
-            Open your table
-          </Link>
-          .
+          We&rsquo;re meeting families in {cityName} now. Does your family cook
+          something {cityName} should taste?
         </p>
+        <Link href="/become-a-host" className={`${primaryButtonClass} mt-5`}>
+          Become a host
+        </Link>
       </div>
     );
   }
 
   return (
-    <section aria-labelledby="tables-title" className="mt-8">
-      <h2 id="tables-title" className="font-serif text-2xl md:text-3xl">
-        Family tables
-      </h2>
-      <ul className="mt-5 grid gap-6 md:grid-cols-2">
+    <section aria-label="Family tables" className="mt-8">
+      <ul className="grid gap-6 md:grid-cols-2">
         {tables.map((table) => {
           const host = state.hosts.find((h) => h.id === table.hostId)!;
           const next = upcomingSessions(state, table.id).find((s) => seatsLeft(state, s) > 0);

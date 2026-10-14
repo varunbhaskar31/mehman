@@ -1,5 +1,5 @@
-// Food experiences by dining city. These are illustrative concepts only:
-// no host has been onboarded and nothing here can be booked.
+// Mehman's cities, and a small library of credited regional food photos
+// used on the How it works and Our story pages and in the preview data.
 
 import type { StaticImageData } from "next/image";
 import bengaluruThumb from "@/assets/cities/bengaluru.png";
@@ -47,7 +47,6 @@ export type ExploreCity = {
   coords: { lat: number; lng: number };
   // A welcome in the city's own language, shown as the city opens.
   greeting: { local: string; english: string };
-  experienceIds: string[];
 };
 
 const ccBySa = (version: string) => ({
@@ -246,12 +245,6 @@ export const exploreCities: ExploreCity[] = [
     thumbnail: bengaluruThumb,
     coords: { lat: 12.9716, lng: 77.5946 },
     greeting: { local: "Banni, oota maadi", english: "Come, have a meal" },
-    experienceIds: [
-      "rajasthani-family-thali",
-      "karnataka-home-meal",
-      "bengali-home-dining",
-      "awadhi-dastarkhwan",
-    ],
   },
   {
     id: "kochi",
@@ -260,11 +253,6 @@ export const exploreCities: ExploreCity[] = [
     thumbnail: kochiThumb,
     coords: { lat: 9.9312, lng: 76.2673 },
     greeting: { local: "Swagatham", english: "Welcome" },
-    experienceIds: [
-      "kerala-sadya",
-      "syrian-christian-home-meal",
-      "malabar-home-dining",
-    ],
   },
   {
     id: "lucknow",
@@ -273,7 +261,6 @@ export const exploreCities: ExploreCity[] = [
     thumbnail: lucknowThumb,
     coords: { lat: 26.8467, lng: 80.9462 },
     greeting: { local: "Tashreef laaiye", english: "Please, come in" },
-    experienceIds: ["awadhi-dastarkhwan", "lucknowi-home-meal"],
   },
   {
     id: "jaipur",
@@ -282,7 +269,6 @@ export const exploreCities: ExploreCity[] = [
     thumbnail: jaipurThumb,
     coords: { lat: 26.9124, lng: 75.7873 },
     greeting: { local: "Padharo mhare des", english: "Welcome to our land" },
-    experienceIds: ["rajasthani-family-thali", "dal-baati-churma-experience"],
   },
   {
     id: "kolkata",
@@ -291,7 +277,6 @@ export const exploreCities: ExploreCity[] = [
     thumbnail: kolkataThumb,
     coords: { lat: 22.5726, lng: 88.3639 },
     greeting: { local: "Esho, kheye jao", english: "Come, eat before you go" },
-    experienceIds: ["bengali-family-lunch", "bengali-fish-meal"],
   },
   {
     id: "hyderabad",
@@ -300,7 +285,6 @@ export const exploreCities: ExploreCity[] = [
     thumbnail: hyderabadThumb,
     coords: { lat: 17.385, lng: 78.4867 },
     greeting: { local: "Khush aamdeed", english: "Welcome" },
-    experienceIds: ["hyderabadi-home-feast", "deccani-meal"],
   },
 ];
 
@@ -314,9 +298,6 @@ export function findExperience(id: string) {
   return experiences.find((experience) => experience.id === id);
 }
 
-export function experiencesFor(city: ExploreCity) {
-  return city.experienceIds.flatMap((id) => findExperience(id) ?? []);
-}
 
 // Matches city names and common alternatives ("Bangalore", "Cochin").
 export function searchCities(query: string) {
@@ -349,8 +330,4 @@ export function nearestCity(lat: number, lng: number, maxKm = 60) {
 
 export function exploreCityHref(city: ExploreCity) {
   return `/explore/${city.id}`;
-}
-
-export function experienceHref(experience: Experience, city: ExploreCity) {
-  return `/experiences/${experience.id}?city=${city.id}`;
 }

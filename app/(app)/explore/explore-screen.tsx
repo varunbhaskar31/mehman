@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { AccountButton } from "@/app/_components/account-button";
 import { useOpenCity } from "@/app/_components/city-transition";
+import { ModeSwitchLink } from "@/app/_components/mode-switch-link";
+import { NotificationBell } from "@/app/_components/notification-bell";
 import { MehmanLogo } from "@/app/_components/mehman-logo";
 import exploreScene from "@/assets/explore-scene.jpg";
 import {
@@ -25,7 +27,6 @@ const navLinks = [
   { href: "/explore", label: "Explore", current: true },
   { href: "/how-it-works", label: "How it works" },
   { href: "/our-story", label: "Our story" },
-  { href: "/become-a-host", label: "Become a host" },
 ];
 
 function PinIcon({ className }: { className?: string }) {
@@ -172,6 +173,9 @@ export function ExploreScreen() {
                 </Link>
               </li>
             ))}
+            <li>
+              <ModeSwitchLink className={`rounded text-ivory/90 hover:text-ivory ${focusRing}`} />
+            </li>
           </ul>
         </nav>
 
@@ -182,7 +186,11 @@ export function ExploreScreen() {
             <ChevronIcon className="size-4 shrink-0 opacity-80" />
             <CitySelect city={city} label="Dining city" onChange={changeCity} />
           </div>
-          <AccountButton />
+          {/* Phones reach these through the bottom tabs. */}
+          <div className="explore-header-account">
+            <NotificationBell />
+            <AccountButton />
+          </div>
         </div>
       </header>
 

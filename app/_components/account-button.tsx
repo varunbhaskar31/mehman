@@ -24,7 +24,7 @@ export function AccountButton() {
     return (
       <Link
         href="/login"
-        className={`inline-flex h-11 items-center rounded-full border border-ivory/75 px-4 text-sm text-ivory transition-colors hover:bg-ivory/10 ${focusRing}`}
+        className={`inline-flex h-11 items-center whitespace-nowrap rounded-full border border-ivory/75 px-4 text-sm text-ivory transition-colors hover:bg-ivory/10 ${focusRing}`}
       >
         Log in
       </Link>
@@ -33,8 +33,8 @@ export function AccountButton() {
 
   return (
     <Link
-      href="/account"
-      aria-label={`Your account (${user.fullName || user.email})`}
+      href="/profile"
+      aria-label={`Your profile (${user.fullName || user.email})`}
       className={`grid size-11 place-items-center rounded-full bg-[#e8c08f] font-medium text-pine ${focusRing}`}
     >
       {initials(user.fullName, user.email)}

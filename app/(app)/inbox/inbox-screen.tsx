@@ -41,7 +41,7 @@ function upcomingReminders(state: DemoState) {
     );
 }
 
-export function NotificationsScreen() {
+export function InboxScreen() {
   const state = useDemoState();
   const notifications = myNotifications(state);
   const hasUnread = notifications.some((n) => !n.read);
@@ -59,7 +59,7 @@ export function NotificationsScreen() {
         const reminders = upcomingReminders(state);
         return (
           <div className="space-y-6">
-            <PageTitle kicker="Notifications" title="What's new" />
+            <PageTitle kicker="Inbox" title="What's new" />
             {reminders.length > 0 && (
               <ul className="space-y-2">
                 {reminders.map((r) => (

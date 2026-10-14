@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { currentUser, hostForUser, useDemoState } from "@/lib/demo/store";
+import { currentUser, hostForUser, myNotifications, useDemoState } from "@/lib/demo/store";
 
 const iconProps = {
   viewBox: "0 0 24 24",
@@ -29,11 +29,10 @@ const icons: Record<string, ReactNode> = {
       <path d="M8 3v4M16 3v4M4 10h16" />
     </svg>
   ),
-  hosting: (
+  inbox: (
     <svg {...iconProps}>
-      <path d="M4 11 12 4l8 7" />
-      <path d="M6 10v9h12v-9" />
-      <path d="M10 19v-5h4v5" />
+      <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z" />
+      <path d="M10 20a2 2 0 0 0 4 0" />
     </svg>
   ),
   account: (
@@ -68,16 +67,14 @@ const icons: Record<string, ReactNode> = {
   ),
 };
 
-// Phone navigation. On wider screens the header links take over.
+// Phone navigation, Airbnb-style: travelling tabs everywhere, and the
+// host's own tabs inside hosting mode. Wider screens use the header.
 export function MobileTabBar() {
   const pathname = usePathname();
   const state = useDemoState();
   const user = currentUser(state);
   const host = hostForUser(state, user?.id);
-  const isHost = Boolean(host);
-
-  // Explore carries the full menu in its own header.
-  if (pathname === "/explore") return null;
+  const unread = myNotifications(state).filter((n) => !n.read).length;
 
   const hostMode = pathname === "/host" || pathname.startsWith("/host/");
   const pendingRequests = host
@@ -99,10 +96,10 @@ export function MobileTabBar() {
         { key: "earnings", href: "/host/earnings", label: "Earnings", match: ["/host/earnings"] },
       ]
     : [
-        { key: "explore", href: "/explore", label: "Explore", match: ["/explore", "/experiences", "/tables"] },
+        { key: "explore", href: "/explore", label: "Explore", match: ["/explore", "/tables"] },
         { key: "trips", href: "/trips", label: "Trips", match: ["/trips"] },
-        { key: "hosting", href: isHost ? "/host" : "/become-a-host", label: "Hosting", match: ["/host", "/become-a-host"] },
-        { key: "account", href: user ? "/account" : "/login", label: user ? "Account" : "Log in", match: ["/account", "/login", "/admin", "/notifications"] },
+        { key: "inbox", href: "/inbox", label: "Inbox", match: ["/inbox"], badge: unread },
+        { key: "account", href: "/profile", label: "Profile", match: ["/profile", "/login", "/admin", "/become-a-host", "/how-it-works", "/our-story"] },
       ];
 
   return (

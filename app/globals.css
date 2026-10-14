@@ -619,9 +619,10 @@ input {
   height: 2.75rem;
 }
 
-.explore-nav {
-  grid-column: 1 / -1;
-  grid-row: 2;
+/* Phones navigate with the bottom tabs; the menu is for wider screens. */
+.explore-nav,
+.explore-header-account {
+  display: none;
 }
 
 .explore-nav ul {
@@ -830,8 +831,15 @@ input {
   }
 
   .explore-nav {
+    display: block;
     grid-column: 2;
     grid-row: 1;
+  }
+
+  .explore-header-account {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
   }
 
   .explore-nav ul {

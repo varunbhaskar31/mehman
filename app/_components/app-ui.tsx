@@ -161,8 +161,8 @@ export function RequireUser({
       <EmptyState
         title="This page is for the Mehman team"
         action={
-          <Link href="/account" className={secondaryButtonClass}>
-            Go to your account
+          <Link href="/profile" className={secondaryButtonClass}>
+            Go to your profile
           </Link>
         }
       >

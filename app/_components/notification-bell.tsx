@@ -13,8 +13,8 @@ export function NotificationBell() {
 
   return (
     <Link
-      href="/notifications"
-      aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+      href="/inbox"
+      aria-label={unread ? `Inbox, ${unread} unread` : "Inbox"}
       className={`relative grid size-11 place-items-center rounded-full text-ivory/85 hover:bg-ivory/10 ${focusRing}`}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="size-6">

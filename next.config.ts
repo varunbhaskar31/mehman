@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
         destination: "/explore/:city",
         permanent: false,
       },
+      // Renamed pages.
+      { source: "/account", destination: "/profile", permanent: false },
+      { source: "/notifications", destination: "/inbox", permanent: false },
+      // The illustrative concept pages were replaced by real family tables.
+      { source: "/experiences/:slug", destination: "/explore", permanent: false },
     ];
   },
   turbopack: {
