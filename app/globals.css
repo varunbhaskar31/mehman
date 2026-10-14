@@ -632,8 +632,14 @@ input {
   white-space: nowrap;
 }
 
-.explore-city-pill {
+.explore-header-end {
   justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.explore-city-pill {
   display: flex;
   align-items: center;
   gap: 0.5rem;

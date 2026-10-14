@@ -1,0 +1,21 @@
+# Settings pushed to the live project with `npx supabase config push`.
+# Only what is declared here is changed; everything else stays as set in
+# the Supabase dashboard.
+project_id = "mehman"
+
+[auth]
+site_url = "https://mehman-home-dining.netlify.app"
+# Where login may return to: the live site, Netlify draft deploys and local
+# development.
+additional_redirect_urls = [
+  "https://mehman-home-dining.netlify.app/**",
+  "https://*--mehman-home-dining.netlify.app/**",
+  "http://localhost:3000/**",
+]
+
+[auth.email]
+otp_length = 6
+otp_expiry = 900
+
+# The 6-digit-code email template (templates/login-code.html) can only be
+# pushed once a custom SMTP sender is configured; see README.

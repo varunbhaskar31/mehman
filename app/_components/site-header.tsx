@@ -1,71 +1,59 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { AccountButton } from "./account-button";
+import { MehmanLogo } from "./mehman-logo";
+
+type Page = "explore" | "how-it-works" | "our-story" | "host";
 
 type SiteHeaderProps = {
-  current?: "explore" | "host";
-  exploreHref?: string;
-  // Optional control on the right, such as the dining-city selector.
-  children?: ReactNode;
+  current?: Page;
 };
 
 const focusRing =
   "rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ivory";
 
-export function SiteHeader({
-  current,
-  exploreHref = "/explore",
-  children,
-}: SiteHeaderProps) {
-  const linkClass = (page: SiteHeaderProps["current"]) =>
-    `${focusRing} ${
-      current === page
-        ? "text-ivory underline decoration-terracotta-soft decoration-2 underline-offset-8"
-        : "text-ivory/70 hover:text-ivory"
-    }`;
+const links: { page: Page; href: string; label: string }[] = [
+  { page: "explore", href: "/explore", label: "Explore" },
+  { page: "how-it-works", href: "/how-it-works", label: "How it works" },
+  { page: "our-story", href: "/our-story", label: "Our story" },
+  { page: "host", href: "/become-a-host", label: "Become a host" },
+];
 
+export function SiteHeader({ current }: SiteHeaderProps) {
   return (
-    <header className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 px-4 pt-[max(1rem,env(safe-area-inset-top))] text-ivory md:grid-cols-[1fr_auto_1fr] md:px-10 md:pt-8">
+    <header className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-4 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] text-ivory md:grid-cols-[1fr_auto_1fr] md:px-10 md:pt-7">
       <Link
         href="/"
-        className={`justify-self-start font-serif text-3xl leading-none ${focusRing}`}
+        className={`flex items-center gap-2 justify-self-start font-serif text-2xl leading-none ${focusRing}`}
       >
+        <MehmanLogo className="h-9 w-auto" />
         Mehman
       </Link>
 
-      <nav
-        aria-label="Main"
-        // Phones use the bottom tab bar instead.
-        className={
-          children
-            ? "hidden md:col-start-2 md:row-start-1 md:block"
-            : "hidden md:col-start-2 md:block md:justify-self-center"
-        }
-      >
-        <ul className="flex items-center gap-6 text-sm md:gap-7">
-          <li>
-            <Link
-              href={exploreHref}
-              aria-current={current === "explore" ? "page" : undefined}
-              className={linkClass("explore")}
-            >
-              Explore
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/become-a-host"
-              aria-current={current === "host" ? "page" : undefined}
-              className={linkClass("host")}
-            >
-              Become a Host
-            </Link>
-          </li>
+      {/* Phones use the bottom tab bar instead. */}
+      <nav aria-label="Main" className="hidden md:block">
+        <ul className="flex items-center gap-7 text-sm">
+          {links.map((link) => (
+            <li key={link.page}>
+              <Link
+                href={link.href}
+                aria-current={current === link.page ? "page" : undefined}
+                className={`${focusRing} ${
+                  current === link.page
+                    ? "text-ivory underline decoration-terracotta-soft decoration-2 underline-offset-8"
+                    : "text-ivory/70 hover:text-ivory"
+                }`}
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
         </ul>
       </nav>
 
-      {children && (
-        <div className="justify-self-end md:col-start-3">{children}</div>
-      )}
+      <div className="justify-self-end">
+        <AccountButton />
+      </div>
     </header>
   );
 }

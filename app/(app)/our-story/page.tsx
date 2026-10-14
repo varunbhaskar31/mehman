@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function OurStoryPage() {
   return (
     <div className="min-h-dvh overflow-x-clip bg-pine text-ivory">
-      <SiteHeader />
+      <SiteHeader current="our-story" />
       <main>
         <OurStory />
       </main>

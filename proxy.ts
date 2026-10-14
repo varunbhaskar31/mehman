@@ -11,8 +11,11 @@ import {
 const protectedPaths = ["/account", "/host", "/trips", "/admin"];
 
 export async function proxy(request: NextRequest) {
-  // Until Supabase is connected, the site runs as a public prototype.
-  if (!supabaseConfigured) return NextResponse.next();
+  // Until real accounts are switched on, journeys run on the in-browser
+  // preview data and pages handle signed-out visitors themselves.
+  if (!supabaseConfigured || process.env.NEXT_PUBLIC_AUTH_MODE !== "supabase") {
+    return NextResponse.next();
+  }
 
   let response = NextResponse.next({ request });
 

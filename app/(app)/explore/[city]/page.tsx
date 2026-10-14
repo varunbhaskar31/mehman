@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BackLink, SiteHeader } from "@/app/_components/site-header";
+import { CityTables } from "./city-tables";
 import {
   experienceHref,
   experiencesFor,
@@ -54,12 +55,17 @@ export default async function CityPage({
             <p className="text-sm text-ivory/55">{city.greeting.english}</p>
           </div>
         </header>
-        <p className="mt-4 text-sm text-ivory/55">
-          Illustrative concepts while we meet host families. Nothing here can be
+        <CityTables cityId={city.id} cityName={city.name} />
+
+        <h2 className="mt-14 font-serif text-2xl md:text-3xl">
+          More from {city.name}&rsquo;s kitchens
+        </h2>
+        <p className="mt-1 text-sm text-ivory/55">
+          Ideas for tables we&rsquo;d love to see here. These can&rsquo;t be
           booked yet.
         </p>
 
-        <ul className="mt-8 space-y-10 md:mt-10 md:space-y-12">
+        <ul className="mt-6 space-y-10 md:mt-8 md:space-y-12">
           {cityExperiences.map((experience) => (
             <li key={experience.id}>
               <Link
@@ -85,9 +91,9 @@ export default async function CityPage({
                   <p className="text-xs tracking-[0.2em] text-terracotta-soft uppercase">
                     Experience concept
                   </p>
-                  <h2 className="mt-2 font-serif text-2xl decoration-terracotta-soft decoration-1 underline-offset-4 group-hover:underline md:text-3xl">
+                  <h3 className="mt-2 font-serif text-2xl decoration-terracotta-soft decoration-1 underline-offset-4 group-hover:underline md:text-3xl">
                     {experience.name}
-                  </h2>
+                  </h3>
                   <p className="mt-2 text-base leading-relaxed text-ivory/75">
                     {experience.description}
                   </p>

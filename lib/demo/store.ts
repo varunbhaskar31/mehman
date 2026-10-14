@@ -1,0 +1,393 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
+import { createSeed } from "./seed";
+import type {
+  Booking,
+  BookingStatus,
+  DemoState,
+  DiningSession,
+  DiningTable,
+  Host,
+  Profile,
+  TableStatus,
+} from "./types";
+
+// A stand-in for the database while the journeys are being designed. It
+// keeps everything in this browser and applies the same rules as the
+// Supabase functions (seat limits, who may change a booking, review).
+
+const STORAGE_KEY = "mehman-demo-v1";
+
+// Nothing is known on the server, so pages render their signed-out,
+// empty shell first and fill in once the browser has loaded the data.
+const serverState: DemoState = {
+  version: 1,
+  currentUserId: null,
+  profiles: [],
+  hosts: [],
+  tables: [],
+  sessions: [],
+  bookings: [],
+};
+
+let state: DemoState | null = null;
+let loaded = false;
+const listeners = new Set<() => void>();
+
+function load(): DemoState {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as DemoState;
+      if (parsed.version === 1) return parsed;
+    }
+  } catch (error) {
+    console.error("[demo] Couldn't read saved data", error);
+  }
+  return createSeed();
+}
+
+function getState(): DemoState {
+  if (!state) {
+    state = load();
+    loaded = true;
+  }
+  return state;
+}
+
+function setState(update: (current: DemoState) => DemoState) {
+  state = update(getState());
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.error("[demo] Couldn't save data", error);
+  }
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY) {
+      state = null;
+      listener();
+    }
+  };
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+export function useDemoState(): DemoState {
+  return useSyncExternalStore(subscribe, getState, () => serverState);
+}
+
+// False during the first render on the client, while saved data loads.
+export function useDemoReady(): boolean {
+  return useSyncExternalStore(
+    subscribe,
+    () => {
+      getState();
+      return loaded;
+    },
+    () => false,
+  );
+}
+
+const id = (prefix: string) =>
+  `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+
+type Result<T = void> = { error: string } | { ok: true; value: T };
+
+const fail = (error: string): { error: string } => ({ error });
+
+// ------------------------------------------------------------ selectors
+
+export function currentUser(s: DemoState): Profile | null {
+  return s.profiles.find((profile) => profile.id === s.currentUserId) ?? null;
+}
+
+export function hostForUser(s: DemoState, userId: string | null | undefined) {
+  return s.hosts.find((host) => host.userId === userId) ?? null;
+}
+
+export function seatsLeft(s: DemoState, session: DiningSession) {
+  const taken = s.bookings
+    .filter(
+      (booking) =>
+        booking.sessionId === session.id &&
+        (booking.status === "requested" || booking.status === "accepted"),
+    )
+    .reduce((sum, booking) => sum + booking.partySize, 0);
+  return session.seatsTotal - taken;
+}
+
+export function hasStarted(iso: string) {
+  return new Date(iso).getTime() <= Date.now();
+}
+
+export function upcomingSessions(s: DemoState, tableId: string) {
+  const now = Date.now();
+  return s.sessions
+    .filter(
+      (session) =>
+        session.tableId === tableId && new Date(session.startsAt).getTime() > now,
+    )
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+}
+
+export function approvedTablesInCity(s: DemoState, cityId: string) {
+  return s.tables.filter((table) => {
+    const host = s.hosts.find((h) => h.id === table.hostId);
+    return (
+      table.status === "approved" &&
+      host?.status === "approved" &&
+      host.cityId === cityId
+    );
+  });
+}
+
+// Everything a booking screen needs, joined together.
+export function bookingDetails(s: DemoState, booking: Booking) {
+  const session = s.sessions.find((x) => x.id === booking.sessionId)!;
+  const table = s.tables.find((x) => x.id === session.tableId)!;
+  const host = s.hosts.find((x) => x.id === table.hostId)!;
+  const guest = s.profiles.find((x) => x.id === booking.guestId)!;
+  return { booking, session, table, host, guest };
+}
+
+// ------------------------------------------------------------- account
+
+// Email or phone, whichever the visitor logged in with.
+export function signIn(
+  login: { email: string } | { phone: string },
+  fullName = "",
+): Result<Profile> {
+  const email = "email" in login ? login.email.trim().toLowerCase() : "";
+  const phone = "phone" in login ? login.phone.replace(/\s+/g, "") : "";
+  const existing = getState().profiles.find((p) =>
+    email ? p.email === email : p.phone.replace(/\s+/g, "") === phone,
+  );
+  const profile: Profile = existing ?? {
+    id: id("user"),
+    email,
+    fullName,
+    phone,
+    role: "guest",
+    createdAt: new Date().toISOString(),
+  };
+  setState((s) => ({
+    ...s,
+    currentUserId: profile.id,
+    profiles: existing ? s.profiles : [...s.profiles, profile],
+  }));
+  return { ok: true, value: profile };
+}
+
+export function switchUser(userId: string) {
+  setState((s) => ({ ...s, currentUserId: userId }));
+}
+
+export function signOut() {
+  setState((s) => ({ ...s, currentUserId: null }));
+}
+
+export function updateProfile(fields: { fullName: string; phone: string }): Result {
+  const me = currentUser(getState());
+  if (!me) return fail("Please log in again.");
+  setState((s) => ({
+    ...s,
+    profiles: s.profiles.map((p) =>
+      p.id === me.id
+        ? { ...p, fullName: fields.fullName.trim(), phone: fields.phone.trim() }
+        : p,
+    ),
+  }));
+  return { ok: true, value: undefined };
+}
+
+export function resetDemo() {
+  const keepUser = getState().currentUserId;
+  setState(() => {
+    const fresh = createSeed();
+    return fresh.profiles.some((p) => p.id === keepUser)
+      ? { ...fresh, currentUserId: keepUser }
+      : fresh;
+  });
+}
+
+// ------------------------------------------------------------- hosting
+
+export type HostApplication = {
+  host: Pick<Host, "cityId" | "displayName" | "bio" | "languages" | "address" | "contactPhone">;
+  table: Pick<
+    DiningTable,
+    "title" | "story" | "menu" | "cuisine" | "veg" | "pricePerGuest" | "maxGuests" | "photos"
+  >;
+  dates: { startsAt: string; seats: number }[];
+};
+
+export function applyAsHost(application: HostApplication): Result {
+  const s = getState();
+  const me = currentUser(s);
+  if (!me) return fail("Please log in to apply.");
+  if (hostForUser(s, me.id)) return fail("You've already applied to host.");
+
+  const now = new Date().toISOString();
+  const host: Host = {
+    id: id("host"),
+    userId: me.id,
+    ...application.host,
+    status: "pending",
+    reviewNote: null,
+    createdAt: now,
+  };
+  const table: DiningTable = {
+    id: id("table"),
+    hostId: host.id,
+    ...application.table,
+    status: "pending",
+    reviewNote: null,
+    createdAt: now,
+  };
+  const sessions: DiningSession[] = application.dates.map((date) => ({
+    id: id("session"),
+    tableId: table.id,
+    startsAt: date.startsAt,
+    seatsTotal: date.seats,
+  }));
+
+  setState((current) => ({
+    ...current,
+    hosts: [...current.hosts, host],
+    tables: [...current.tables, table],
+    sessions: [...current.sessions, ...sessions],
+  }));
+  return { ok: true, value: undefined };
+}
+
+export function addSession(tableId: string, startsAt: string, seats: number): Result {
+  const s = getState();
+  const myHost = hostForUser(s, s.currentUserId);
+  const table = s.tables.find((t) => t.id === tableId);
+  if (!myHost || table?.hostId !== myHost.id) return fail("You can only add dates to your own table.");
+  if (new Date(startsAt).getTime() <= Date.now()) return fail("Please pick a date in the future.");
+  if (seats < 1 || seats > table.maxGuests) return fail(`Seats must be between 1 and ${table.maxGuests}.`);
+  setState((current) => ({
+    ...current,
+    sessions: [...current.sessions, { id: id("session"), tableId, startsAt, seatsTotal: seats }],
+  }));
+  return { ok: true, value: undefined };
+}
+
+export function removeSession(sessionId: string): Result {
+  const s = getState();
+  const active = s.bookings.some(
+    (b) => b.sessionId === sessionId && (b.status === "requested" || b.status === "accepted"),
+  );
+  if (active) return fail("Guests have asked for this date. Decline or cancel them first.");
+  setState((current) => ({
+    ...current,
+    sessions: current.sessions.filter((x) => x.id !== sessionId),
+  }));
+  return { ok: true, value: undefined };
+}
+
+// A host may pause and resume their own approved table.
+export function setOwnTablePaused(tableId: string, paused: boolean): Result {
+  const s = getState();
+  const table = s.tables.find((t) => t.id === tableId);
+  const myHost = hostForUser(s, s.currentUserId);
+  if (!table || table.hostId !== myHost?.id) return fail("This isn't your table.");
+  const allowed = paused ? table.status === "approved" : table.status === "paused";
+  if (!allowed) return fail("That change needs Mehman's review.");
+  setState((current) => ({
+    ...current,
+    tables: current.tables.map((t) =>
+      t.id === tableId ? { ...t, status: paused ? "paused" : "approved" } : t,
+    ),
+  }));
+  return { ok: true, value: undefined };
+}
+
+// ---------------------------------------------------------------- admin
+
+export function reviewHost(hostId: string, approve: boolean, note: string): Result {
+  const s = getState();
+  if (currentUser(s)?.role !== "admin") return fail("Only the Mehman team can review hosts.");
+  const host = s.hosts.find((h) => h.id === hostId);
+  if (!host) return fail("Host not found.");
+  const tableStatus: TableStatus = approve ? "approved" : "rejected";
+  setState((current) => ({
+    ...current,
+    hosts: current.hosts.map((h) =>
+      h.id === hostId
+        ? { ...h, status: approve ? "approved" : "rejected", reviewNote: note.trim() || null }
+        : h,
+    ),
+    tables: current.tables.map((t) =>
+      t.hostId === hostId && t.status === "pending"
+        ? { ...t, status: tableStatus, reviewNote: note.trim() || null }
+        : t,
+    ),
+    profiles: current.profiles.map((p) =>
+      p.id === host.userId && approve && p.role === "guest" ? { ...p, role: "host" } : p,
+    ),
+  }));
+  return { ok: true, value: undefined };
+}
+
+// ------------------------------------------------------------ bookings
+
+export function requestBooking(sessionId: string, partySize: number, note: string): Result<Booking> {
+  const s = getState();
+  const me = currentUser(s);
+  if (!me) return fail("Please log in to request a seat.");
+  const session = s.sessions.find((x) => x.id === sessionId);
+  const table = s.tables.find((t) => t.id === session?.tableId);
+  if (!session || table?.status !== "approved" || new Date(session.startsAt).getTime() <= Date.now()) {
+    return fail("This date is no longer available.");
+  }
+  if (hostForUser(s, me.id)?.id === table.hostId) return fail("You can't book your own table.");
+  if (s.bookings.some((b) => b.sessionId === sessionId && b.guestId === me.id && (b.status === "requested" || b.status === "accepted"))) {
+    return fail("You've already asked for this date.");
+  }
+  if (seatsLeft(s, session) < partySize) return fail("Not enough seats left on this date.");
+
+  const booking: Booking = {
+    id: id("booking"),
+    sessionId,
+    guestId: me.id,
+    partySize,
+    note: note.trim(),
+    status: "requested",
+    createdAt: new Date().toISOString(),
+  };
+  setState((current) => ({ ...current, bookings: [...current.bookings, booking] }));
+  return { ok: true, value: booking };
+}
+
+export function setBookingStatus(bookingId: string, next: BookingStatus): Result {
+  const s = getState();
+  const me = currentUser(s);
+  const booking = s.bookings.find((b) => b.id === bookingId);
+  if (!me || !booking) return fail("Booking not found.");
+  const { host } = bookingDetails(s, booking);
+  const isHost = host.userId === me.id;
+  const isGuest = booking.guestId === me.id;
+
+  const allowed =
+    (isHost && booking.status === "requested" && (next === "accepted" || next === "declined")) ||
+    (isHost && booking.status === "accepted" && (next === "completed" || next === "cancelled")) ||
+    (isGuest && (booking.status === "requested" || booking.status === "accepted") && next === "cancelled");
+  if (!allowed) return fail("That change isn't allowed.");
+
+  setState((current) => ({
+    ...current,
+    bookings: current.bookings.map((b) => (b.id === bookingId ? { ...b, status: next } : b)),
+  }));
+  return { ok: true, value: undefined };
+}

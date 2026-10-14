@@ -9,6 +9,7 @@ import {
   useEffect,
   useRef,
   useState,
+  Suspense,
   type CSSProperties,
   type ReactNode,
 } from "react";
@@ -42,7 +43,7 @@ export function useOpenCity() {
 // changes beneath it.
 export function CityTransitionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
+  const [pathname, setPathname] = useState<string | null>(null);
   const [opening, setOpening] = useState<Opening | null>(null);
 
   const openCity = useCallback(
@@ -104,10 +105,21 @@ export function CityTransitionProvider({ children }: { children: ReactNode }) {
 
   return (
     <OpenCityContext.Provider value={openCity}>
+      <Suspense>
+        <PathnameReporter onChange={setPathname} />
+      </Suspense>
       {children}
       {opening && <CityCurtain opening={opening} />}
     </OpenCityContext.Provider>
   );
+}
+
+// Reads the route inside its own Suspense boundary, so the layout itself
+// doesn't depend on the URL and pages can still render instantly.
+function PathnameReporter({ onChange }: { onChange: (path: string) => void }) {
+  const pathname = usePathname();
+  useEffect(() => onChange(pathname), [pathname, onChange]);
+  return null;
 }
 
 function CityCurtain({ opening }: { opening: Opening }) {

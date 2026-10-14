@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { AccountButton } from "@/app/_components/account-button";
 import { useOpenCity } from "@/app/_components/city-transition";
 import { MehmanLogo } from "@/app/_components/mehman-logo";
 import exploreScene from "@/assets/explore-scene.jpg";
@@ -174,11 +175,14 @@ export function ExploreScreen() {
           </ul>
         </nav>
 
-        <div className="explore-city-pill relative has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-4 has-[select:focus-visible]:outline-ivory">
-          <PinIcon className="size-4 shrink-0" />
-          <span>{city.name}</span>
-          <ChevronIcon className="size-4 shrink-0 opacity-80" />
-          <CitySelect city={city} label="Dining city" onChange={changeCity} />
+        <div className="explore-header-end">
+          <div className="explore-city-pill relative has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-4 has-[select:focus-visible]:outline-ivory">
+            <PinIcon className="size-4 shrink-0" />
+            <span>{city.name}</span>
+            <ChevronIcon className="size-4 shrink-0 opacity-80" />
+            <CitySelect city={city} label="Dining city" onChange={changeCity} />
+          </div>
+          <AccountButton />
         </div>
       </header>
 
