@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Netlify local state
 .netlify
+
+# Supabase CLI local state
+supabase/.temp
