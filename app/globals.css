@@ -396,6 +396,139 @@ body {
   }
 }
 
+/*
+ * Desktop welcome: words on the left, the whole courtyard feast on the
+ * right with its edges melting into the green. The art box keeps the
+ * painting's 1672×941 ratio, so nothing is cropped and the lamp glows stay
+ * on their lamps. Only on wide, landscape screens; phones and tablets keep
+ * the kitchen painting above.
+ */
+.welcome-desk {
+  display: none;
+}
+
+@media (min-width: 1024px) and (min-aspect-ratio: 5 / 4) {
+  .welcome-page {
+    display: block;
+    background: var(--color-pine);
+  }
+
+  .welcome-stage {
+    display: none;
+  }
+
+  .welcome-desk {
+    --art-w: min(68vw, calc((100dvh - 3rem) * 1672 / 941));
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 100dvh;
+    overflow: hidden;
+    color: var(--color-ivory);
+    background: var(--color-pine);
+  }
+
+  .welcome-desk-glow {
+    object-fit: cover;
+    scale: 1.15;
+    filter: blur(48px) brightness(0.42) saturate(1.15);
+    pointer-events: none;
+  }
+
+  .welcome-desk-art {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: var(--art-w);
+    aspect-ratio: 1672 / 941;
+    translate: 0 -50%;
+    mask-image:
+      linear-gradient(to right, transparent, #000 12%),
+      linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+    mask-composite: intersect;
+    animation: welcome-fade-in 900ms ease-out both;
+  }
+
+  .welcome-desk-art img {
+    animation: welcome-desk-drift 40s ease-in-out infinite alternate;
+  }
+
+  .welcome-desk-lamp {
+    position: absolute;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    translate: -50% -50%;
+    background: radial-gradient(
+      circle,
+      rgb(255 205 120 / 0.6) 0%,
+      rgb(255 170 80 / 0.22) 40%,
+      transparent 70%
+    );
+    mix-blend-mode: screen;
+    pointer-events: none;
+    animation: lantern-flicker 3.6s ease-in-out infinite;
+  }
+
+  .welcome-desk-lamp:nth-child(odd) {
+    animation-duration: 4.4s;
+    animation-delay: -1.3s;
+  }
+
+  .welcome-desk-copy {
+    position: relative;
+    z-index: 1;
+    width: calc(100vw - var(--art-w) + 3rem);
+    max-width: 34rem;
+    padding-left: clamp(2.5rem, 5vw, 5rem);
+    padding-right: 1rem;
+    animation: welcome-desk-rise 900ms ease-out 250ms both;
+  }
+
+  .welcome-desk-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: var(--color-pine);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 550ms ease-in 150ms;
+  }
+
+  .welcome-desk-veil[data-active] {
+    opacity: 1;
+  }
+}
+
+@keyframes welcome-desk-drift {
+  from {
+    scale: 1;
+  }
+  to {
+    scale: 1.05;
+  }
+}
+
+@keyframes welcome-desk-rise {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-desk-art,
+  .welcome-desk-art img,
+  .welcome-desk-lamp,
+  .welcome-desk-copy {
+    animation: none;
+  }
+
+  .welcome-desk-veil {
+    transition: none;
+  }
+}
+
 @keyframes welcome-fade-in {
   from {
     opacity: 0;
