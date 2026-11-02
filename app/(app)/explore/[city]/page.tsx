@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { BackLink, SiteHeader } from "@/app/_components/site-header";
 import { exploreCities, findExploreCity } from "@/data/experiences";
 import { CityTables } from "./city-tables";
@@ -75,7 +76,9 @@ export default async function CityPage({
           </div>
         </header>
 
-        <CityTables cityId={city.id} cityName={city.name} />
+        <Suspense fallback={<div className="mt-8 h-64" aria-hidden="true" />}>
+          <CityTables cityId={city.id} cityName={city.name} />
+        </Suspense>
       </main>
     </div>
   );

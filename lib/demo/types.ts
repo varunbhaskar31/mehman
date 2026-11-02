@@ -32,6 +32,10 @@ export type Host = {
   languages: string[];
   // Private: shown to a guest only once their booking is accepted.
   address: string;
+  // Public: the neighbourhood and a rough centre point for the map. Never
+  // the exact house; that stays in address.
+  locality?: string;
+  area?: { lat: number; lng: number };
   contactPhone: string;
   status: ReviewStatus;
   reviewNote: string | null;
@@ -102,7 +106,7 @@ export type SavedTable = {
 };
 
 export type DemoState = {
-  version: 4;
+  version: 5;
   currentUserId: string | null;
   profiles: Profile[];
   hosts: Host[];

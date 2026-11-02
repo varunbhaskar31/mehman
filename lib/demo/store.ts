@@ -24,7 +24,7 @@ const STORAGE_KEY = "mehman-demo-v1";
 // Nothing is known on the server, so pages render their signed-out,
 // empty shell first and fill in once the browser has loaded the data.
 const serverState: DemoState = {
-  version: 4,
+  version: 5,
   currentUserId: null,
   profiles: [],
   hosts: [],
@@ -46,7 +46,7 @@ function load(): DemoState {
     if (raw) {
       const parsed = JSON.parse(raw) as DemoState;
       // Older preview data is simply replaced with fresh samples.
-      if (parsed.version === 4) return parsed;
+      if (parsed.version === 5) return parsed;
     }
   } catch (error) {
     console.error("[demo] Couldn't read saved data", error);

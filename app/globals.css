@@ -803,16 +803,11 @@ input {
 }
 
 /*
- * Explore. The table artwork (1024×1536) is the page itself: its edges melt
- * into the page green, and the real controls sit where the design places
- * them. Positions below are fractions of the artwork's size.
+ * Explore. A real map of the chosen city fills the top of the page and melts
+ * into the background; the city picker, nearby family tables and city
+ * photos follow below it.
  */
 .explore-page {
-  /* Phones: always wider than the screen, so the table never looks boxed. */
-  --art-w: 118vw;
-  --search-top: calc(var(--art-h) * 0.708);
-  --cities-top: calc(var(--search-top) + 6rem);
-  --art-h: calc(var(--art-w) * 1.5);
   position: relative;
   overflow-x: clip;
   background: var(--color-pine);
@@ -826,7 +821,7 @@ input {
   grid-template-columns: auto 1fr;
   align-items: center;
   gap: 0.75rem 1rem;
-  padding: max(0.75rem, env(safe-area-inset-top)) 1rem 0;
+  padding: max(0.75rem, env(safe-area-inset-top)) 1rem 0.75rem;
 }
 
 .explore-logo {
@@ -854,38 +849,38 @@ input {
 
 .explore-scene {
   position: relative;
-  height: calc(var(--cities-top) + 13rem);
-  margin-top: calc(var(--art-w) * -0.06);
+  padding-bottom: 3rem;
 }
 
-/* Phones: shift the artwork so the map, not the canvas, is centred. */
-.explore-art {
-  position: absolute;
-  top: 0;
-  left: calc(50% - var(--art-w) * 0.5635);
-  width: var(--art-w);
-  max-width: none;
-  height: var(--art-h);
-  mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    #000 9%,
-    #000 66%,
-    transparent 74%
-  );
+.explore-map {
+  position: relative;
+  height: max(22rem, 56svh);
+  mask-image: linear-gradient(to bottom, transparent, #000 6%, #000 82%, transparent);
   animation: explore-art-in 1.2s ease-out both;
 }
 
+.explore-map-credit {
+  position: relative;
+  z-index: 1;
+  margin: -1.5rem 1rem 0;
+  font-size: 0.625rem;
+  text-align: right;
+  color: rgb(246 239 223 / 0.45);
+}
+
+.explore-map-credit a:hover {
+  color: var(--color-ivory);
+}
+
 .explore-search {
-  position: absolute;
-  top: var(--search-top);
-  left: 50%;
+  position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   width: min(34rem, calc(100% - 2rem));
   height: 3.5rem;
+  margin: 0.75rem auto 0;
   padding: 0 0.375rem 0 1.25rem;
   border-radius: 9999px;
   background: #f7efdd;
@@ -894,7 +889,6 @@ input {
   font-weight: 500;
   font-family: var(--font-cta), ui-sans-serif, system-ui, sans-serif;
   box-shadow: 0 14px 34px rgb(0 0 0 / 0.35);
-  transform: translateX(-50%);
   animation: explore-rise 0.8s ease-out 0.3s both;
 }
 
@@ -931,22 +925,129 @@ input {
 }
 
 .explore-notice {
-  position: absolute;
-  top: calc(var(--search-top) + 3.75rem);
-  left: 50%;
   width: min(34rem, calc(100% - 2rem));
   min-height: 1.25rem;
+  margin: 0.5rem auto 0;
   font-size: 0.8125rem;
   text-align: center;
   color: rgb(246 239 223 / 0.65);
-  transform: translateX(-50%);
+}
+
+/* Nearby family tables, nearest first. */
+.explore-near {
+  width: min(64rem, calc(100% - 2rem));
+  margin: 1.25rem auto 0;
+  animation: explore-rise 0.8s ease-out 0.4s both;
+}
+
+.explore-near-head h2 {
+  font-family: var(--font-dm-serif), Georgia, serif;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.explore-near-head p {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: rgb(246 239 223 / 0.65);
+}
+
+.explore-near-locate {
+  color: var(--color-ivory);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.explore-near-empty {
+  margin-top: 1rem;
+  font-size: 0.9375rem;
+  color: rgb(246 239 223 / 0.75);
+}
+
+.explore-near-empty a {
+  color: var(--color-ivory);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.explore-near ul {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.explore-near li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 0.875rem 0.875rem 1rem;
+  border: 1px solid rgb(246 239 223 / 0.12);
+  border-radius: 1rem;
+  background: rgb(246 239 223 / 0.04);
+  transition:
+    border-color 150ms,
+    background 150ms;
+}
+
+.explore-near li[data-selected] {
+  border-color: rgb(227 178 107 / 0.7);
+  background: rgb(227 178 107 / 0.1);
+}
+
+.explore-near-pick {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 0.125rem;
+  border-radius: 0.5rem;
+  text-align: left;
+}
+
+.explore-near-locality {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e3b26b;
+}
+
+.explore-near-km {
+  color: rgb(246 239 223 / 0.75);
+}
+
+.explore-near-title {
+  font-family: var(--font-dm-serif), Georgia, serif;
+  font-size: 1.125rem;
+  line-height: 1.25;
+}
+
+.explore-near-host {
+  overflow: hidden;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: rgb(246 239 223 / 0.65);
+}
+
+.explore-near-view {
+  flex-shrink: 0;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid rgb(246 239 223 / 0.35);
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: background 150ms;
+}
+
+.explore-near-view:hover {
+  background: rgb(246 239 223 / 0.1);
 }
 
 .explore-cities {
-  position: absolute;
-  top: var(--cities-top);
-  left: 0;
-  right: 0;
+  margin-top: 2rem;
   animation: explore-rise 0.8s ease-out 0.45s both;
 }
 
@@ -995,8 +1096,6 @@ input {
 }
 
 .explore-city[data-selected] .explore-city-thumb {
-  width: 4.25rem;
-  height: 4.25rem;
   box-shadow:
     0 0 0 2px var(--color-ivory),
     0 8px 20px rgb(0 0 0 / 0.3);
@@ -1011,74 +1110,225 @@ input {
   color: var(--color-ivory);
 }
 
-/* Tablet and desktop: the whole design, centred, as one composition. */
-@media (min-width: 768px) {
-  .explore-page {
-    --art-w: min(100vw, 1024px, max(640px, calc((100dvh - 10rem) * 0.6667)));
-  }
+/*
+ * The map itself. Street-map tiles are inverted and warmed to Mehman's browns;
+ * outside the city is dimmed so its boundary glows.
+ */
+.city-map {
+  width: 100%;
+  height: 100%;
+  background: var(--color-pine);
+  font-family: var(--font-cta), ui-sans-serif, system-ui, sans-serif;
+}
 
+.city-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) grayscale(0.6) sepia(0.55) brightness(0.62) contrast(1.15);
+}
+
+.city-map .city-map-outline {
+  filter: drop-shadow(0 0 6px rgb(227 178 107 / 0.7));
+}
+
+.city-map .city-map-dot {
+  fill: #e3b26b;
+  fill-opacity: 1;
+  stroke: #f6efdf;
+  stroke-width: 2;
+  transition: opacity 300ms;
+}
+
+.city-map[data-zoomed-in] .city-map-dot {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.city-map-tip {
+  border: 0;
+  border-radius: 9999px;
+  background: #f7efdd;
+  color: #1c1a17;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.35);
+}
+
+.city-map-tip::before {
+  display: none;
+}
+
+.city-map .leaflet-control-zoom {
+  border: 1px solid rgb(246 239 223 / 0.25);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  margin: 0.75rem 0.75rem 0 0;
+}
+
+.city-map .leaflet-control-zoom a {
+  border-color: rgb(246 239 223 / 0.15);
+  background: rgb(18 11 7 / 0.85);
+  color: var(--color-ivory);
+}
+
+.city-map .leaflet-control-zoom a:hover {
+  background: #2a1b11;
+}
+
+.city-map-host {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+}
+
+.city-map-host-dot {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid #f6efdf;
+  border-radius: 9999px;
+  background: var(--color-terracotta);
+  color: #f6efdf;
+  box-shadow: 0 6px 14px rgb(0 0 0 / 0.45);
+  transition: transform 200ms;
+}
+
+.city-map-host-dot svg {
+  width: 18px;
+  height: 18px;
+}
+
+.city-map-host[data-selected] .city-map-host-dot {
+  background: #e3b26b;
+  color: #1c1a17;
+  transform: scale(1.15);
+}
+
+.city-map-host-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgb(18 11 7 / 0.85);
+  color: #f6efdf;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.city-map-you {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f6efdf;
+  border-radius: 9999px;
+  background: #4f8cff;
+  box-shadow: 0 0 0 0 rgb(79 140 255 / 0.6);
+  animation: city-map-pulse 2s ease-out infinite;
+}
+
+.city-map-you-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #f7efdd;
+  color: #1c1a17;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* Hover (desktop) or first tap (phones) on a neighbourhood. */
+.city-map-host-tip {
+  display: grid;
+  gap: 1px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #f7efdd;
+  color: #1c1a17;
+  font-family: var(--font-cta), ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.4);
+}
+
+.city-map-host-tip::before {
+  border-top-color: #f7efdd;
+}
+
+.city-map-host-tip strong {
+  font-size: 14px;
+}
+
+.city-map-host-tip em {
+  font-size: 11px;
+  font-style: normal;
+  color: #8a5a3c;
+}
+
+@keyframes city-map-pulse {
+  to {
+    box-shadow: 0 0 0 14px rgb(79 140 255 / 0);
+  }
+}
+
+/* Tablet and desktop: a wide map, tables in a row beneath it. */
+@media (min-width: 768px) {
   /* The shared website header replaces the phone header here. */
   .explore-header {
     display: none;
   }
 
-  .explore-scene {
-    height: var(--art-h);
-    margin-top: 0;
-  }
-
-  /* Wider screens: the table's edges melt into the page instead of
-     stopping at a hard line. */
-  .explore-page {
-    background: radial-gradient(
-        ellipse calc(var(--art-w) * 1.1) 80% at 50% 40%,
-        #22170f,
-        var(--color-pine)
-      );
-  }
-
-  .explore-art {
-    left: calc(50% - var(--art-w) / 2);
+  .explore-map {
+    height: clamp(26rem, calc(100dvh - 15rem), 44rem);
     mask-image:
-      linear-gradient(to right, transparent, #000 22%, #000 78%, transparent),
-      linear-gradient(to bottom, #000 90%, transparent);
+      linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+      linear-gradient(to bottom, #000 85%, transparent);
     mask-composite: intersect;
   }
 
-  .explore-search {
-    top: calc(var(--art-h) * 0.72);
-    width: calc(var(--art-w) * 0.535);
-    min-width: 30rem;
-    height: max(3.75rem, calc(var(--art-w) * 0.094));
-    padding-left: 2rem;
-    font-size: max(1.25rem, calc(var(--art-w) * 0.0215));
+  .explore-map-credit {
+    margin-right: 9%;
   }
 
-  .explore-search-pin {
-    width: max(1.375rem, calc(var(--art-w) * 0.026));
-    height: max(1.375rem, calc(var(--art-w) * 0.026));
+  .explore-search {
+    margin-top: 0.5rem;
+    width: min(36rem, calc(100% - 4rem));
+    height: 4rem;
+    padding-left: 1.75rem;
+    font-size: 1.25rem;
   }
 
   .explore-search-go {
-    width: max(3rem, calc(var(--art-w) * 0.078));
-    height: max(3rem, calc(var(--art-w) * 0.078));
+    width: 3.25rem;
+    height: 3.25rem;
   }
 
-  .explore-notice {
-    top: calc(var(--art-h) * 0.72 + max(3.75rem, calc(var(--art-w) * 0.094)) + 0.5rem);
+  .explore-near ul {
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
   }
 
-  .explore-cities {
-    top: calc(var(--art-h) * 0.818);
-    overflow: visible;
+  .explore-near li {
+    align-items: flex-end;
   }
 
   .explore-cities ul {
     display: flex;
-    max-width: calc(var(--art-w) * 0.9);
+    max-width: 52rem;
     justify-content: space-between;
     gap: 0.25rem;
-    padding: 0;
+    padding: 0 1rem;
   }
 
   .explore-city {
@@ -1086,28 +1336,20 @@ input {
   }
 
   .explore-city-thumb {
-    width: max(4.75rem, calc(var(--art-w) * 0.088));
-    height: max(4.75rem, calc(var(--art-w) * 0.088));
-  }
-
-  .explore-city[data-selected] .explore-city-thumb {
-    width: max(5.25rem, calc(var(--art-w) * 0.097));
-    height: max(5.25rem, calc(var(--art-w) * 0.097));
-    box-shadow:
-      0 0 0 3px var(--color-ivory),
-      0 8px 20px rgb(0 0 0 / 0.3);
+    width: 5rem;
+    height: 5rem;
   }
 
   .explore-city-name {
-    font-size: max(1.125rem, calc(var(--art-w) * 0.0185));
+    font-size: 1.125rem;
   }
 
   .explore-city[data-selected] .explore-city-name {
-    font-size: max(1.25rem, calc(var(--art-w) * 0.021));
+    font-size: 1.25rem;
   }
 }
 
-/* The table settles into the room, then the controls rise into place. */
+/* The map settles into the page, then the controls rise into place. */
 @keyframes explore-art-in {
   from {
     opacity: 0;
@@ -1123,9 +1365,11 @@ input {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .explore-art,
+  .explore-map,
   .explore-search,
-  .explore-cities {
+  .explore-near,
+  .explore-cities,
+  .city-map-you {
     animation: none;
   }
 }

@@ -26,14 +26,20 @@ type Origin = { x: number; y: number; radius: number };
 
 type Opening = {
   city: ExploreCity;
+  // Where to land, e.g. the city filtered to one neighbourhood.
+  href: string;
   origin: Origin;
   startedAt: number;
   phase: "opening" | "lifting";
 };
 
-const OpenCityContext = createContext<
-  (city: ExploreCity, from?: HTMLElement | null) => void
->(() => {});
+type OpenCity = (
+  city: ExploreCity,
+  from?: HTMLElement | null,
+  query?: string,
+) => void;
+
+const OpenCityContext = createContext<OpenCity>(() => {});
 
 export function useOpenCity() {
   return useContext(OpenCityContext);
@@ -47,8 +53,8 @@ export function CityTransitionProvider({ children }: { children: ReactNode }) {
   const [opening, setOpening] = useState<Opening | null>(null);
 
   const openCity = useCallback(
-    (city: ExploreCity, from?: HTMLElement | null) => {
-      const href = exploreCityHref(city);
+    (city: ExploreCity, from?: HTMLElement | null, query?: string) => {
+      const href = exploreCityHref(city) + (query ? `?${query}` : "");
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
@@ -65,12 +71,12 @@ export function CityTransitionProvider({ children }: { children: ReactNode }) {
             radius: rect.width / 2,
           }
         : { x: window.innerWidth / 2, y: window.innerHeight / 2, radius: 0 };
-      setOpening({ city, origin, startedAt: performance.now(), phase: "opening" });
+      setOpening({ city, href, origin, startedAt: performance.now(), phase: "opening" });
     },
     [router],
   );
 
-  const target = opening ? exploreCityHref(opening.city) : null;
+  const target = opening ? opening.href : null;
 
   useEffect(() => {
     if (!opening || opening.phase !== "opening" || !target) return;
@@ -83,7 +89,7 @@ export function CityTransitionProvider({ children }: { children: ReactNode }) {
 
   // Lift the curtain once the city page is in place and the greeting has
   // had time to play; give up waiting if navigation stalls.
-  const arrived = target !== null && pathname === target;
+  const arrived = opening !== null && pathname === exploreCityHref(opening.city);
   useEffect(() => {
     if (!opening || opening.phase !== "opening") return;
     const elapsed = performance.now() - opening.startedAt;
