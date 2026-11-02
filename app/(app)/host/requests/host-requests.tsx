@@ -1,7 +1,7 @@
 "use client";
 
-import { PageTitle, SampleDataNote } from "@/app/_components/app-ui";
-import { bookingDetails, hasStarted } from "@/lib/demo/store";
+import { PageTitle } from "@/app/_components/app-ui";
+import { bookingDetails, hasStarted } from "@/lib/data/store";
 import { bookingsForTable, GuestBookingCard, HostGate } from "../host-shell";
 
 export function HostRequests() {
@@ -34,7 +34,6 @@ export function HostRequests() {
                 <ul className="space-y-3">{upcoming.map((b) => <GuestBookingCard key={b.id} state={state} booking={b} />)}</ul>
               )}
             </section>
-            <SampleDataNote />
           </div>
         );
       }}

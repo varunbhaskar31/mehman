@@ -6,10 +6,10 @@ import type { ReactNode } from "react";
 import { primaryButtonClass } from "./fields";
 import {
   currentUser,
-  useDemoReady,
-  useDemoState,
-} from "@/lib/demo/store";
-import type { BookingStatus, Profile, TableStatus } from "@/lib/demo/types";
+  useAppReady,
+  useAppState,
+} from "@/lib/data/store";
+import type { BookingStatus, Profile, TableStatus } from "@/lib/data/types";
 
 export const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ivory";
@@ -55,15 +55,6 @@ export function StatusChip({ status }: { status: BookingStatus | TableStatus }) 
     <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${style.className}`}>
       {style.label}
     </span>
-  );
-}
-
-export function SampleDataNote() {
-  return (
-    <p className="rounded-xl border border-dashed border-ivory/20 px-4 py-3 text-xs leading-relaxed text-ivory/55">
-      Preview with sample data. Everything you do here is saved only on this
-      device until Mehman&rsquo;s database is connected.
-    </p>
   );
 }
 
@@ -132,8 +123,8 @@ export function RequireUser({
   role?: "admin";
   children: (user: Profile) => ReactNode;
 }) {
-  const ready = useDemoReady();
-  const user = currentUser(useDemoState());
+  const ready = useAppReady();
+  const user = currentUser(useAppState());
   const pathname = usePathname();
 
   if (!ready) {

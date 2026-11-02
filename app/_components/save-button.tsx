@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { isSaved, toggleSaved, useDemoState } from "@/lib/demo/store";
+import { isSaved, toggleSaved, useAppState } from "@/lib/data/store";
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ivory";
@@ -18,7 +18,7 @@ export function SaveButton({
   title: string;
   variant?: "overlay" | "labelled";
 }) {
-  const state = useDemoState();
+  const state = useAppState();
   const router = useRouter();
   const pathname = usePathname();
   const saved = isSaved(state, tableId);
@@ -28,10 +28,10 @@ export function SaveButton({
       type="button"
       aria-pressed={saved}
       aria-label={saved ? `Remove ${title} from Saved` : `Save ${title}`}
-      onClick={(event) => {
+      onClick={async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        const result = toggleSaved(tableId);
+        const result = await toggleSaved(tableId);
         if ("error" in result) router.push(`/login?next=${encodeURIComponent(pathname)}`);
       }}
       className={`grid size-11 place-items-center rounded-full bg-pine/80 backdrop-blur transition-transform active:scale-90 ${focusRing} ${

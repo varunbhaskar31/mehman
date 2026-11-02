@@ -9,7 +9,6 @@ import {
   focusRing,
   formatPrice,
   formatWhen,
-  SampleDataNote,
   secondaryButtonClass,
   Stars,
 } from "@/app/_components/app-ui";
@@ -24,15 +23,15 @@ import {
   seatsLeft,
   tableRating,
   upcomingSessions,
-  useDemoReady,
-  useDemoState,
-} from "@/lib/demo/store";
+  useAppReady,
+  useAppState,
+} from "@/lib/data/store";
 
 const vegLabel = { veg: "Vegetarian", non_veg: "Non-vegetarian", both: "Veg & non-veg" };
 
 export function TableScreen({ tableId }: { tableId: string }) {
-  const state = useDemoState();
-  const ready = useDemoReady();
+  const state = useAppState();
+  const ready = useAppReady();
   const uid = useId();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [party, setParty] = useState(2);
@@ -71,10 +70,10 @@ export function TableScreen({ tableId }: { tableId: string }) {
   const partySize = Math.min(party, Math.max(1, maxParty));
   const loginHref = `/login?next=${encodeURIComponent(`/tables/${table.id}`)}`;
 
-  function submit() {
+  async function submit() {
     setError(null);
     if (!selected) return setError("Please choose a date.");
-    const result = requestBooking(selected.id, partySize, note);
+    const result = await requestBooking(selected.id, partySize, note);
     if ("error" in result) return setError(result.error);
     setRequested(true);
     requestAnimationFrame(() => confirmRef.current?.focus());
@@ -231,7 +230,6 @@ export function TableScreen({ tableId }: { tableId: string }) {
           )}
 
           <div className="hidden md:block">
-            <SampleDataNote />
           </div>
         </div>
 
@@ -319,7 +317,6 @@ export function TableScreen({ tableId }: { tableId: string }) {
         </aside>
 
         <div className="mt-8 md:hidden">
-          <SampleDataNote />
         </div>
       </div>
 

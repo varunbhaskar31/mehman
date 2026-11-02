@@ -17,5 +17,14 @@ additional_redirect_urls = [
 otp_length = 6
 otp_expiry = 900
 
+# Email logins send a 6-digit code rather than a link.
+[auth.email.template.magic_link]
+subject = "Your Mehman login code"
+content_path = "./supabase/templates/login-code.html"
+
+[auth.email.template.confirmation]
+subject = "Your Mehman login code"
+content_path = "./supabase/templates/login-code.html"
+
 # The 6-digit-code email template (templates/login-code.html) can only be
 # pushed once a custom SMTP sender is configured; see README.

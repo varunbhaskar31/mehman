@@ -9,16 +9,15 @@ import {
   formatPrice,
   PageTitle,
   RequireUser,
-  SampleDataNote,
   secondaryButtonClass,
   Stars,
   StatusChip,
 } from "@/app/_components/app-ui";
 import { exploreCities, findExploreCity } from "@/data/experiences";
-import { adminSetTablePaused, tableRating, useDemoState } from "@/lib/demo/store";
+import { adminSetTablePaused, tableRating, useAppState } from "@/lib/data/store";
 
 export function AdminHosts() {
-  const state = useDemoState();
+  const state = useAppState();
   const [cityId, setCityId] = useState("all");
   const [error, setError] = useState<string | null>(null);
 
@@ -82,8 +81,8 @@ export function AdminHosts() {
                           {table && (table.status === "approved" || table.status === "paused") && (
                             <button
                               type="button"
-                              onClick={() => {
-                                const result = adminSetTablePaused(table.id, table.status === "approved");
+                              onClick={async () => {
+                                const result = await adminSetTablePaused(table.id, table.status === "approved");
                                 setError("error" in result ? result.error : null);
                               }}
                               className={secondaryButtonClass}
@@ -99,7 +98,6 @@ export function AdminHosts() {
                 })}
               </ul>
             )}
-            <SampleDataNote />
           </div>
         );
       }}

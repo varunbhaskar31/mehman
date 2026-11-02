@@ -9,7 +9,6 @@ import {
   focusRing,
   formatPrice,
   formatWhen,
-  SampleDataNote,
   secondaryButtonClass,
 } from "@/app/_components/app-ui";
 import { primaryButtonClass, SelectField, TextField } from "@/app/_components/fields";
@@ -18,10 +17,10 @@ import {
   applyAsHost,
   currentUser,
   hostForUser,
-  useDemoReady,
-  useDemoState,
-} from "@/lib/demo/store";
-import type { VegType } from "@/lib/demo/types";
+  useAppReady,
+  useAppState,
+} from "@/lib/data/store";
+import type { VegType } from "@/lib/data/types";
 import { resizePhoto } from "@/lib/photos";
 
 const LANGUAGES = ["Hindi", "English", "Bengali", "Kannada", "Malayalam", "Marathi", "Tamil", "Telugu", "Urdu", "Gujarati", "Punjabi", "Marwari"];
@@ -33,6 +32,7 @@ type Draft = {
   bio: string;
   languages: string[];
   cityId: string;
+  locality: string;
   address: string;
   contactPhone: string;
   title: string;
@@ -51,6 +51,7 @@ const emptyDraft: Draft = {
   bio: "",
   languages: [],
   cityId: exploreCities[0].id,
+  locality: "",
   address: "",
   contactPhone: "",
   title: "",
@@ -74,6 +75,7 @@ function validateStep(step: number, d: Draft): Errors {
     if (d.languages.length === 0) e.languages = "Pick at least one language.";
   }
   if (step === 1) {
+    if (d.locality.trim().length < 3) e.locality = "Which neighbourhood are you in? Guests search by it.";
     if (d.address.trim().length < 10) e.address = "Please enter your full address.";
     if (d.contactPhone.replace(/\D/g, "").length < 10) e.contactPhone = "Please enter a mobile number guests can reach on the day.";
   }
@@ -97,8 +99,8 @@ const vegOptions: { id: VegType; label: string }[] = [
 ];
 
 export function HostOnboarding() {
-  const state = useDemoState();
-  const ready = useDemoReady();
+  const state = useAppState();
+  const ready = useAppReady();
   const router = useRouter();
   const uid = useId();
   const f = (name: string) => `${uid}-${name}`;
@@ -109,6 +111,7 @@ export function HostOnboarding() {
   const [newDate, setNewDate] = useState("");
   const [newSeats, setNewSeats] = useState(6);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -198,13 +201,16 @@ export function HostOnboarding() {
     setErrors((e) => ({ ...e, newDate: undefined, dates: undefined }));
   }
 
-  function submit() {
-    const result = applyAsHost({
+  async function submit() {
+    setSubmitting(true);
+    setSubmitError(null);
+    const result = await applyAsHost({
       host: {
         cityId: draft.cityId,
         displayName: draft.displayName.trim(),
         bio: draft.bio.trim(),
         languages: draft.languages,
+        locality: draft.locality.trim(),
         address: draft.address.trim(),
         contactPhone: draft.contactPhone.trim(),
       },
@@ -220,7 +226,10 @@ export function HostOnboarding() {
       },
       dates: draft.dates,
     });
-    if ("error" in result) return setSubmitError(result.error);
+    if ("error" in result) {
+      setSubmitting(false);
+      return setSubmitError(result.error);
+    }
     router.push("/host?submitted=1");
   }
 
@@ -272,6 +281,7 @@ export function HostOnboarding() {
         {step === 1 && (
           <>
             <SelectField id={f("city")} label="City" value={draft.cityId} onChange={set("cityId")} options={exploreCities.map((c) => ({ id: c.id, name: c.name }))} />
+            <TextField id={f("locality")} label="Neighbourhood" hint="Shown to guests, like Koramangala or Bani Park. Never your exact address." autoComplete="address-level3" value={draft.locality} onChange={set("locality")} error={errors.locality} maxLength={60} />
             <TextField id={f("address")} label="Home address" hint="Private. Shared only with guests whose booking you accept." multiline value={draft.address} onChange={set("address")} error={errors.address} maxLength={300} />
             <TextField id={f("contactPhone")} label="Mobile number for guests" hint="Private, same as your address." autoComplete="tel" value={draft.contactPhone} onChange={set("contactPhone")} error={errors.contactPhone} maxLength={20} />
           </>
@@ -385,6 +395,7 @@ export function HostOnboarding() {
                 ["Languages", draft.languages.join(", ")],
                 ["Menu", draft.menu],
                 ["Dates", draft.dates.map((d) => formatWhen(d.startsAt)).join(" · ")],
+                ["Neighbourhood", draft.locality],
                 ["Address (private)", draft.address],
               ].map(([term, value]) => (
                 <div key={term}>
@@ -412,12 +423,13 @@ export function HostOnboarding() {
         {step < STEPS.length - 1 ? (
           <button type="button" onClick={next} className={primaryButtonClass}>Continue</button>
         ) : (
-          <button type="button" onClick={submit} className={primaryButtonClass}>Submit for review</button>
+          <button type="button" onClick={submit} disabled={submitting} className={primaryButtonClass}>
+            {submitting ? "Sending…" : "Submit for review"}
+          </button>
         )}
       </div>
 
       <div className="mt-10">
-        <SampleDataNote />
       </div>
     </div>
   );

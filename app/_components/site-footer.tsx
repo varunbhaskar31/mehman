@@ -27,6 +27,8 @@ const columns = [
     links: [
       { href: "mailto:hello@mehman.in", label: "Get help" },
       { href: "mailto:hello@mehman.in?subject=Feedback", label: "Share feedback" },
+      { href: "/terms", label: "Terms" },
+      { href: "/privacy", label: "Privacy" },
     ],
   },
 ];

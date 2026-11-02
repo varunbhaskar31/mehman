@@ -5,11 +5,10 @@ import {
   cardClass,
   focusRing,
   PageTitle,
-  SampleDataNote,
 } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
-import { addSessions, removeSession, seatsLeft } from "@/lib/demo/store";
-import type { DemoState, DiningTable } from "@/lib/demo/types";
+import { addSessions, removeSession, seatsLeft } from "@/lib/data/store";
+import type { AppState, DiningTable } from "@/lib/data/types";
 import { HostGate } from "../host-shell";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -20,7 +19,7 @@ const timeName = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-
 const dayKey = (date: Date) =>
   `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 
-function Calendar({ state, table }: { state: DemoState; table: DiningTable }) {
+function Calendar({ state, table }: { state: AppState; table: DiningTable }) {
   const uid = useId();
   const [cursor, setCursor] = useState(() => {
     const d = new Date();
@@ -52,7 +51,7 @@ function Calendar({ state, table }: { state: DemoState; table: DiningTable }) {
   const selectedSessions = (byDay.get(dayKey(selected)) ?? []).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const selectedIsPast = selected < today;
 
-  function add() {
+  async function add() {
     const [hours, minutes] = time.split(":").map(Number);
     const starts = Array.from({ length: repeatWeeks }, (_, week) => {
       const d = new Date(selected);
@@ -60,7 +59,7 @@ function Calendar({ state, table }: { state: DemoState; table: DiningTable }) {
       d.setHours(hours, minutes, 0, 0);
       return d.toISOString();
     });
-    const result = addSessions(table.id, starts, seats);
+    const result = await addSessions(table.id, starts, seats);
     if ("error" in result) return setMessage(result.error);
     setMessage(result.value === 1 ? "Date added." : `${result.value} dates added.`);
   }
@@ -128,8 +127,8 @@ function Calendar({ state, table }: { state: DemoState; table: DiningTable }) {
                   {!selectedIsPast && (
                     <button
                       type="button"
-                      onClick={() => {
-                        const result = removeSession(session.id);
+                      onClick={async () => {
+                        const result = await removeSession(session.id);
                         setMessage("error" in result ? result.error : "Date removed.");
                       }}
                       className={`rounded text-sm text-ivory/60 underline ${focusRing}`}
@@ -183,7 +182,6 @@ export function HostCalendar() {
             Pick a day to open it for guests. Repeat it weekly for a regular Sunday lunch.
           </PageTitle>
           {table ? <Calendar state={state} table={table} /> : <p className={`${cardClass} text-ivory/70`}>Set up your table first.</p>}
-          <SampleDataNote />
         </div>
       )}
     </HostGate>

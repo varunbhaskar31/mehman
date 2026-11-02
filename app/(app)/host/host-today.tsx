@@ -8,7 +8,6 @@ import {
   formatPrice,
   formatWhen,
   PageTitle,
-  SampleDataNote,
   Stars,
   StatusChip,
 } from "@/app/_components/app-ui";
@@ -18,7 +17,7 @@ import {
   hasStarted,
   tableRating,
   upcomingSessions,
-} from "@/lib/demo/store";
+} from "@/lib/data/store";
 import { bookingsForTable, HostGate } from "./host-shell";
 
 export function HostToday() {
@@ -170,7 +169,6 @@ export function HostToday() {
               </section>
             )}
 
-            <SampleDataNote />
           </div>
         );
       }}

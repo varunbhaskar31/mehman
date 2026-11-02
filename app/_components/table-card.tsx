@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { focusRing, formatPrice } from "./app-ui";
 import { SaveButton } from "./save-button";
-import { tableRating, useDemoState } from "@/lib/demo/store";
-import type { DiningTable, Host } from "@/lib/demo/types";
+import { tableRating, useAppState } from "@/lib/data/store";
+import type { DiningTable, Host } from "@/lib/data/types";
 
 const vegLabel = { veg: "Vegetarian", non_veg: "Non-vegetarian", both: "Veg & non-veg" };
 
@@ -29,7 +29,7 @@ export function TableCard({
   dimmed?: boolean;
   heading?: "h2" | "h3";
 }) {
-  const state = useDemoState();
+  const state = useAppState();
   const rating = tableRating(state, table.id);
 
   return (

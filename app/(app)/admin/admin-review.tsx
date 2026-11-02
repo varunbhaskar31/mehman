@@ -10,16 +10,15 @@ import {
   formatWhen,
   PageTitle,
   RequireUser,
-  SampleDataNote,
   secondaryButtonClass,
   StatusChip,
 } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
 import { findExploreCity } from "@/data/experiences";
-import { reviewHost, reviewTableChanges, upcomingSessions, useDemoState } from "@/lib/demo/store";
-import type { DemoState, DiningTable, Host } from "@/lib/demo/types";
+import { reviewHost, reviewTableChanges, upcomingSessions, useAppState } from "@/lib/data/store";
+import type { AppState, DiningTable, Host } from "@/lib/data/types";
 
-function Application({ state, host }: { state: DemoState; host: Host }) {
+function Application({ state, host }: { state: AppState; host: Host }) {
   const uid = useId();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +26,9 @@ function Application({ state, host }: { state: DemoState; host: Host }) {
   const applicant = state.profiles.find((p) => p.id === host.userId);
   const sessions = table ? upcomingSessions(state, table.id) : [];
 
-  function decide(approve: boolean) {
+  async function decide(approve: boolean) {
     if (!approve && note.trim().length < 5) return setError("Add a short note so the host knows why.");
-    const result = reviewHost(host.id, approve, note);
+    const result = await reviewHost(host.id, approve, note);
     if ("error" in result) setError(result.error);
   }
 
@@ -90,13 +89,13 @@ function Application({ state, host }: { state: DemoState; host: Host }) {
   );
 }
 
-function TableChange({ state, table }: { state: DemoState; table: DiningTable }) {
+function TableChange({ state, table }: { state: AppState; table: DiningTable }) {
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const host = state.hosts.find((h) => h.id === table.hostId)!;
-  function decide(approve: boolean) {
+  async function decide(approve: boolean) {
     if (!approve && note.trim().length < 5) return setError("Add a short note so the host knows why.");
-    const result = reviewTableChanges(table.id, approve, note);
+    const result = await reviewTableChanges(table.id, approve, note);
     if ("error" in result) setError(result.error);
   }
   return (
@@ -124,7 +123,7 @@ function TableChange({ state, table }: { state: DemoState; table: DiningTable })
 }
 
 export function AdminReview() {
-  const state = useDemoState();
+  const state = useAppState();
 
   return (
     <RequireUser role="admin">
@@ -179,7 +178,6 @@ export function AdminReview() {
                 <ul className="space-y-4">{changes.map((t) => <TableChange key={t.id} state={state} table={t} />)}</ul>
               )}
             </section>
-            <SampleDataNote />
           </div>
         );
       }}

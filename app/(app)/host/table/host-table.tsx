@@ -7,12 +7,11 @@ import {
   cardClass,
   focusRing,
   PageTitle,
-  SampleDataNote,
   StatusChip,
 } from "@/app/_components/app-ui";
 import { primaryButtonClass, TextField } from "@/app/_components/fields";
-import { setOwnTablePaused, updateTable, type TableEdits } from "@/lib/demo/store";
-import type { DiningTable, VegType } from "@/lib/demo/types";
+import { setOwnTablePaused, updateTable, type TableEdits } from "@/lib/data/store";
+import type { DiningTable, VegType } from "@/lib/data/types";
 import { resizePhoto } from "@/lib/photos";
 import { HostGate } from "../host-shell";
 
@@ -64,14 +63,14 @@ function Editor({ table }: { table: DiningTable }) {
     }
   }
 
-  function save(event: FormEvent) {
+  async function save(event: FormEvent) {
     event.preventDefault();
     if (draft.title.trim().length < 5) return setMessage({ tone: "error", text: "Give the meal a name." });
     if (draft.story.trim().length < 30) return setMessage({ tone: "error", text: "The story needs at least 30 characters." });
     if (draft.menu.trim().length < 10) return setMessage({ tone: "error", text: "List the dishes you serve." });
     if (!Number.isInteger(price) || price < 100 || price > 50000) return setMessage({ tone: "error", text: "Price must be between ₹100 and ₹50,000." });
     if (draft.photos.length === 0) return setMessage({ tone: "error", text: "Keep at least one photo." });
-    const result = updateTable(table.id, {
+    const result = await updateTable(table.id, {
       title: draft.title.trim(),
       story: draft.story.trim(),
       menu: draft.menu.trim(),
@@ -82,6 +81,8 @@ function Editor({ table }: { table: DiningTable }) {
       photos: draft.photos,
     });
     if ("error" in result) return setMessage({ tone: "error", text: result.error });
+    // New photos are now stored URLs rather than the picked files.
+    set("photos")(result.value.photos);
     setMessage(
       result.value.needsReview
         ? { tone: "warn", text: "Saved. Mehman will check the new price or photos, usually within a day." }
@@ -104,7 +105,10 @@ function Editor({ table }: { table: DiningTable }) {
         <div className="flex gap-3 text-sm">
           <Link href={`/tables/${table.id}`} className={`rounded underline underline-offset-4 ${focusRing}`}>Preview</Link>
           {live && (
-            <button type="button" onClick={() => setOwnTablePaused(table.id, table.status === "approved")} className={`rounded underline underline-offset-4 ${focusRing}`}>
+            <button type="button" onClick={async () => {
+              const result = await setOwnTablePaused(table.id, table.status === "approved");
+              if ("error" in result) setMessage({ tone: "error", text: result.error });
+            }} className={`rounded underline underline-offset-4 ${focusRing}`}>
               {table.status === "approved" ? "Pause bookings" : "Resume bookings"}
             </button>
           )}
@@ -195,7 +199,6 @@ export function HostTable() {
         <div className="space-y-6">
           <PageTitle kicker="My table" title={table?.title ?? "Your table"} />
           {table ? <Editor key={table.id} table={table} /> : <p className={`${cardClass} text-ivory/70`}>No table yet.</p>}
-          <SampleDataNote />
         </div>
       )}
     </HostGate>

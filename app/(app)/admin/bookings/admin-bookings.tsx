@@ -8,12 +8,11 @@ import {
   formatWhen,
   PageTitle,
   RequireUser,
-  SampleDataNote,
   StatusChip,
 } from "@/app/_components/app-ui";
 import { findExploreCity } from "@/data/experiences";
-import { bookingDetails, useDemoState } from "@/lib/demo/store";
-import type { BookingStatus } from "@/lib/demo/types";
+import { bookingDetails, useAppState } from "@/lib/data/store";
+import type { BookingStatus } from "@/lib/data/types";
 
 const filters: { id: "all" | BookingStatus; label: string }[] = [
   { id: "all", label: "All" },
@@ -26,7 +25,7 @@ const filters: { id: "all" | BookingStatus; label: string }[] = [
 ];
 
 export function AdminBookings() {
-  const state = useDemoState();
+  const state = useAppState();
   const [filter, setFilter] = useState<(typeof filters)[number]["id"]>("all");
 
   return (
@@ -79,7 +78,6 @@ export function AdminBookings() {
                 ))}
               </ul>
             )}
-            <SampleDataNote />
           </div>
         );
       }}

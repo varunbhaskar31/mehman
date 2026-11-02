@@ -22,9 +22,20 @@ const handwriting = Kalam({
   weight: "400",
 });
 
+const description =
+  "Home-cooked meals with Indian families in Bengaluru, Kochi, Lucknow, Jaipur, Kolkata and Hyderabad. Come hungry, leave with stories.";
+
 export const metadata: Metadata = {
-  title: "Mehman",
-  description: "People · Food · Cultures",
+  metadataBase: new URL(process.env.URL ?? "https://mehman-home-dining.netlify.app"),
+  title: "Mehman · Eat at a family's table",
+  description,
+  openGraph: {
+    title: "Mehman · Eat at a family's table",
+    description,
+    siteName: "Mehman",
+    locale: "en_IN",
+    type: "website",
+  },
 };
 
 export const viewport: Viewport = {

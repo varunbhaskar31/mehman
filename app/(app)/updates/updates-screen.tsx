@@ -8,7 +8,6 @@ import {
   formatWhen,
   PageTitle,
   RequireUser,
-  SampleDataNote,
 } from "@/app/_components/app-ui";
 import {
   bookingDetails,
@@ -16,15 +15,15 @@ import {
   hasStarted,
   markNotificationsRead,
   myNotifications,
-  useDemoState,
-} from "@/lib/demo/store";
-import type { DemoState } from "@/lib/demo/types";
+  useAppState,
+} from "@/lib/data/store";
+import type { AppState } from "@/lib/data/types";
 
 const DAY = 24 * 60 * 60 * 1000;
 
 // Meals in the next day, for the signed-in guest or host. Real reminders
 // will go out by WhatsApp or SMS the day before.
-function upcomingReminders(state: DemoState) {
+function upcomingReminders(state: AppState) {
   const me = currentUser(state);
   if (!me) return [];
   return state.bookings
@@ -42,7 +41,7 @@ function upcomingReminders(state: DemoState) {
 }
 
 export function UpdatesScreen() {
-  const state = useDemoState();
+  const state = useAppState();
   const notifications = myNotifications(state);
   const hasUnread = notifications.some((n) => !n.read);
 
@@ -93,7 +92,6 @@ export function UpdatesScreen() {
             <p className="text-xs text-ivory/50">
               Once Mehman is live, these also arrive on WhatsApp or SMS, with a reminder the day before each meal.
             </p>
-            <SampleDataNote />
           </div>
         );
       }}

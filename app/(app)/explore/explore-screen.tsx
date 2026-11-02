@@ -21,7 +21,7 @@ import {
   nearestCity,
   type ExploreCity,
 } from "@/data/experiences";
-import { approvedTablesInCity, useDemoReady, useDemoState } from "@/lib/demo/store";
+import { approvedTablesInCity, useAppReady, useAppState } from "@/lib/data/store";
 import { CityMap, type MapHost, type MapVisitor } from "./city-map";
 
 const focusRing =
@@ -95,8 +95,8 @@ export function ExploreScreen() {
   const [pickedHostId, setPickedHostId] = useState<string | null>(null);
   const userPickedCity = useRef(false);
   const thumbRefs = useRef(new Map<string, HTMLElement>());
-  const state = useDemoState();
-  const ready = useDemoReady();
+  const state = useAppState();
+  const ready = useAppReady();
 
   // "You" appears on the map only in the city you're actually in.
   const visitor = useMemo<MapVisitor | null>(

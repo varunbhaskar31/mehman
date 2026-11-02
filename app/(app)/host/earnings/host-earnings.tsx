@@ -6,18 +6,17 @@ import {
   formatPrice,
   formatWhen,
   PageTitle,
-  SampleDataNote,
   Stars,
   StatusChip,
 } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
-import { bookingDetails, hasStarted, replyToReview, tableRating } from "@/lib/demo/store";
-import type { DemoState, Review } from "@/lib/demo/types";
+import { bookingDetails, hasStarted, replyToReview, tableRating } from "@/lib/data/store";
+import type { AppState, Review } from "@/lib/data/types";
 import { bookingsForTable, GuestBookingCard, HostGate } from "../host-shell";
 
 const monthLabel = new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric" });
 
-function ReviewCard({ state, review }: { state: DemoState; review: Review }) {
+function ReviewCard({ state, review }: { state: AppState; review: Review }) {
   const uid = useId();
   const [reply, setReply] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -38,9 +37,9 @@ function ReviewCard({ state, review }: { state: DemoState; review: Review }) {
         </p>
       ) : (
         <form
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
-            const result = replyToReview(review.id, reply);
+            const result = await replyToReview(review.id, reply);
             setError("error" in result ? result.error : null);
           }}
           className="space-y-2 pt-1"
@@ -154,7 +153,6 @@ export function HostEarnings() {
               )}
             </section>
 
-            <SampleDataNote />
           </div>
         );
       }}

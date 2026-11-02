@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { currentUser, hostForUser, useDemoState } from "@/lib/demo/store";
+import { currentUser, hostForUser, useAppState } from "@/lib/data/store";
 
 // "Switch to hosting" for anyone who has applied to host, otherwise an
 // invitation to become one.
 export function ModeSwitchLink({ className }: { className: string }) {
-  const state = useDemoState();
+  const state = useAppState();
   const user = currentUser(state);
   if (user?.role === "admin") {
     return (

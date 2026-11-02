@@ -11,7 +11,6 @@ import {
   formatWhen,
   PageTitle,
   RequireUser,
-  SampleDataNote,
   secondaryButtonClass,
   StatusChip,
 } from "@/app/_components/app-ui";
@@ -20,9 +19,9 @@ import {
   addReview,
   bookingDetails,
   setBookingStatus,
-  useDemoState,
-} from "@/lib/demo/store";
-import type { Booking, DemoState } from "@/lib/demo/types";
+  useAppState,
+} from "@/lib/data/store";
+import type { Booking, AppState } from "@/lib/data/types";
 
 function ReviewForm({ booking, hostName }: { booking: Booking; hostName: string }) {
   const [rating, setRating] = useState(0);
@@ -30,10 +29,10 @@ function ReviewForm({ booking, hostName }: { booking: Booking; hostName: string 
   const [error, setError] = useState<string | null>(null);
   return (
     <form
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
         if (!rating) return setError("Tap the stars to rate your meal.");
-        const result = addReview(booking.id, rating, text);
+        const result = await addReview(booking.id, rating, text);
         setError("error" in result ? result.error : null);
       }}
       className="space-y-3"
@@ -61,7 +60,7 @@ function ReviewForm({ booking, hostName }: { booking: Booking; hostName: string 
   );
 }
 
-function TripCard({ state, booking }: { state: DemoState; booking: Booking }) {
+function TripCard({ state, booking }: { state: AppState; booking: Booking }) {
   const { session, table, host } = bookingDetails(state, booking);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,8 +121,8 @@ function TripCard({ state, booking }: { state: DemoState; booking: Booking }) {
               <p className="text-ivory/80">Cancel this {booking.status === "accepted" ? "booking" : "request"}?</p>
               <button
                 type="button"
-                onClick={() => {
-                  const result = setBookingStatus(booking.id, "cancelled");
+                onClick={async () => {
+                  const result = await setBookingStatus(booking.id, "cancelled");
                   if ("error" in result) setError(result.error);
                   setConfirming(false);
                 }}
@@ -147,7 +146,7 @@ function TripCard({ state, booking }: { state: DemoState; booking: Booking }) {
 }
 
 export function BookingsScreen() {
-  const state = useDemoState();
+  const state = useAppState();
 
   return (
     <RequireUser>
@@ -192,7 +191,6 @@ export function BookingsScreen() {
                 )}
               </>
             )}
-            <SampleDataNote />
           </div>
         );
       }}

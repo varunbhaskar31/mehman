@@ -1,6 +1,5 @@
-// The shapes the app works with. They mirror the Supabase schema in
-// supabase/migrations, so swapping the demo store for the database later
-// changes where data comes from, not what the screens expect.
+// The shapes the app works with, mapped from the Supabase schema in
+// supabase/migrations by lib/data/store.ts.
 
 export type Role = "guest" | "host" | "admin";
 export type ReviewStatus = "pending" | "approved" | "rejected";
@@ -63,6 +62,9 @@ export type DiningSession = {
   tableId: string;
   startsAt: string;
   seatsTotal: number;
+  // Seats held by requested and accepted bookings, counted by the
+  // database since guests can't see each other's bookings.
+  seatsTaken: number;
 };
 
 export type Booking = {
@@ -105,8 +107,8 @@ export type SavedTable = {
   savedAt: string;
 };
 
-export type DemoState = {
-  version: 5;
+// Everything the signed-in visitor is allowed to see.
+export type AppState = {
   currentUserId: string | null;
   profiles: Profile[];
   hosts: Host[];

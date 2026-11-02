@@ -17,17 +17,17 @@ import {
   hasStarted,
   hostForUser,
   setBookingStatus,
-  useDemoState,
-} from "@/lib/demo/store";
-import type { Booking, DemoState, DiningTable, Host, Profile } from "@/lib/demo/types";
+  useAppState,
+} from "@/lib/data/store";
+import type { Booking, AppState, DiningTable, Host, Profile } from "@/lib/data/types";
 
 // Every host page: signed in, and has applied to host.
 export function HostGate({
   children,
 }: {
-  children: (context: { user: Profile; host: Host; table: DiningTable | null; state: DemoState }) => ReactNode;
+  children: (context: { user: Profile; host: Host; table: DiningTable | null; state: AppState }) => ReactNode;
 }) {
-  const state = useDemoState();
+  const state = useAppState();
   return (
     <RequireUser>
       {(user) => {
@@ -47,7 +47,7 @@ export function HostGate({
 }
 
 // All bookings for a host's table, in date order.
-export function bookingsForTable(state: DemoState, tableId: string | undefined) {
+export function bookingsForTable(state: AppState, tableId: string | undefined) {
   return state.bookings
     .filter((b) => state.sessions.find((s) => s.id === b.sessionId)?.tableId === tableId)
     .sort((a, b) =>
@@ -55,11 +55,11 @@ export function bookingsForTable(state: DemoState, tableId: string | undefined) 
     );
 }
 
-export function GuestBookingCard({ state, booking }: { state: DemoState; booking: Booking }) {
+export function GuestBookingCard({ state, booking }: { state: AppState; booking: Booking }) {
   const { session, guest } = bookingDetails(state, booking);
   const [error, setError] = useState<string | null>(null);
-  const act = (next: Booking["status"]) => {
-    const result = setBookingStatus(booking.id, next);
+  const act = async (next: Booking["status"]) => {
+    const result = await setBookingStatus(booking.id, next);
     if ("error" in result) setError(result.error);
   };
   const started = hasStarted(session.startsAt);

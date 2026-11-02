@@ -8,9 +8,9 @@ import {
   hostForUser,
   myNotifications,
   signOut,
-  useDemoReady,
-  useDemoState,
-} from "@/lib/demo/store";
+  useAppReady,
+  useAppState,
+} from "@/lib/data/store";
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ivory";
@@ -26,8 +26,8 @@ type MenuItem = { href: string; label: string; strong?: boolean };
 // Desktop only, like Airbnb's: a rounded ☰ + avatar button that opens
 // everything personal. (Phones use the bottom tabs instead.)
 export function AccountButton() {
-  const ready = useDemoReady();
-  const state = useDemoState();
+  const ready = useAppReady();
+  const state = useAppState();
   const user = currentUser(state);
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -125,9 +125,9 @@ export function AccountButton() {
             <button
               type="button"
               role="menuitem"
-              onClick={() => {
+              onClick={async () => {
                 setOpen(false);
-                signOut();
+                await signOut();
                 router.replace("/explore");
               }}
               className="mt-2 block w-full border-t border-ivory/10 px-4 pt-3 pb-2.5 text-left text-sm text-ivory/80 hover:bg-ivory/10 focus-visible:bg-ivory/10 focus-visible:outline-none"

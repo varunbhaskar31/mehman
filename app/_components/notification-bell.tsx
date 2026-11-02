@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { currentUser, myNotifications, useDemoState } from "@/lib/demo/store";
+import { currentUser, myNotifications, useAppState } from "@/lib/data/store";
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ivory";
 
 export function NotificationBell() {
-  const state = useDemoState();
+  const state = useAppState();
   if (!currentUser(state)) return null;
   const unread = myNotifications(state).filter((n) => !n.read).length;
 

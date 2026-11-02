@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { defaultExploreCity, findExploreCity } from "@/data/experiences";
-import { lastCity } from "@/lib/demo/store";
+import { lastCity } from "@/lib/data/store";
 
 // The Experiences tab opens the city the visitor chose last on Explore.
 export default function ExperiencesPage() {

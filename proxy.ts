@@ -8,14 +8,10 @@ import {
 
 // Pages that need a signed-in visitor. Pages still check for themselves;
 // this only saves a round trip to a page that would turn them away.
-const protectedPaths = ["/account", "/host", "/trips", "/admin"];
+const protectedPaths = ["/profile", "/host", "/bookings", "/saved", "/updates", "/admin", "/become-a-host"];
 
 export async function proxy(request: NextRequest) {
-  // Until real accounts are switched on, journeys run on the in-browser
-  // preview data and pages handle signed-out visitors themselves.
-  if (!supabaseConfigured || process.env.NEXT_PUBLIC_AUTH_MODE !== "supabase") {
-    return NextResponse.next();
-  }
+  if (!supabaseConfigured) return NextResponse.next();
 
   let response = NextResponse.next({ request });
 

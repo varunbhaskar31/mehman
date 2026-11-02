@@ -12,16 +12,16 @@ import {
   rememberCity,
   seatsLeft,
   upcomingSessions,
-  useDemoReady,
-  useDemoState,
-} from "@/lib/demo/store";
+  useAppReady,
+  useAppState,
+} from "@/lib/data/store";
 
 // Real host tables in this city, ready to request a seat at. ?near=<slug>
 // (set when a neighbourhood is tapped on the Explore map) shows just that
 // neighbourhood's tables.
 export function CityTables({ cityId, cityName }: { cityId: string; cityName: string }) {
-  const state = useDemoState();
-  const ready = useDemoReady();
+  const state = useAppState();
+  const ready = useAppReady();
   const router = useRouter();
   const pathname = usePathname();
   const near = useSearchParams().get("near");

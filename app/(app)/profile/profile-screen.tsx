@@ -7,7 +7,6 @@ import {
   cardClass,
   focusRing,
   RequireUser,
-  SampleDataNote,
   secondaryButtonClass,
   StatusChip,
 } from "@/app/_components/app-ui";
@@ -16,16 +15,13 @@ import { MehmanLogo } from "@/app/_components/mehman-logo";
 import { navIcons } from "@/app/_components/nav-icons";
 import {
   currentUser,
-  homeFor,
   hostForUser,
-  resetDemo,
   signOut,
-  switchUser,
   updateProfile,
-  useDemoReady,
-  useDemoState,
-} from "@/lib/demo/store";
-import type { Profile } from "@/lib/demo/types";
+  useAppReady,
+  useAppState,
+} from "@/lib/data/store";
+import type { Profile } from "@/lib/data/types";
 
 type Row = { href: string; label: string; detail?: string; icon?: string };
 
@@ -65,10 +61,10 @@ function PersonalInfo({ user }: { user: Profile }) {
   const [phone, setPhone] = useState(user.phone);
   const [message, setMessage] = useState<string | null>(null);
 
-  function save(event: FormEvent) {
+  async function save(event: FormEvent) {
     event.preventDefault();
     if (fullName.trim().length < 2) return setMessage("Please enter your name.");
-    const result = updateProfile({ fullName, phone });
+    const result = await updateProfile({ fullName, phone });
     if ("error" in result) return setMessage(result.error);
     setMessage(null);
     setOpen(false);
@@ -101,56 +97,8 @@ function PersonalInfo({ user }: { user: Profile }) {
   );
 }
 
-function PreviewTools({ user }: { user: Profile }) {
-  const state = useDemoState();
-  const router = useRouter();
-  const describe = (profile: Profile) => {
-    if (profile.role === "admin") return "Mehman team (approves hosts)";
-    const host = hostForUser(state, profile.id);
-    return host ? `Host · ${host.displayName}` : "Traveller";
-  };
-
-  return (
-    <section className={`${cardClass} border border-dashed border-ivory/20 bg-transparent`}>
-      <h2 className="font-serif text-2xl">Preview tools</h2>
-      <p className="mt-1 text-sm text-ivory/60">
-        Try every side of Mehman on one phone. Switch to a host or the Mehman team, then switch back.
-      </p>
-      <ul className="mt-4 divide-y divide-ivory/10">
-        {state.profiles.map((profile) => (
-          <li key={profile.id} className="flex items-center justify-between gap-3 py-3">
-            <div className="min-w-0">
-              <p className="truncate">{profile.fullName || profile.email || profile.phone}</p>
-              <p className="truncate text-xs text-ivory/55">{describe(profile)}</p>
-            </div>
-            {profile.id === user.id ? (
-              <span className="text-xs text-[#e8c08f]">You now</span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  // Land where that person starts: hosting mode, the team
-                  // console, or Explore.
-                  switchUser(profile.id);
-                  router.push(homeFor(state, profile.id));
-                }}
-                className={secondaryButtonClass}
-              >
-                Switch
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-      <button type="button" onClick={resetDemo} className={`mt-4 rounded text-sm text-terracotta-soft underline underline-offset-4 ${focusRing}`}>
-        Reset all sample data
-      </button>
-    </section>
-  );
-}
-
 function HostingCard({ user }: { user: Profile }) {
-  const state = useDemoState();
+  const state = useAppState();
   const host = hostForUser(state, user.id);
   const table = host && state.tables.find((t) => t.hostId === host.id);
 
@@ -193,8 +141,8 @@ function HostingCard({ user }: { user: Profile }) {
 }
 
 export function ProfileScreen() {
-  const state = useDemoState();
-  const ready = useDemoReady();
+  const state = useAppState();
+  const ready = useAppReady();
   const router = useRouter();
   const user = currentUser(state);
 
@@ -208,7 +156,6 @@ export function ProfileScreen() {
         </div>
         <Link href="/login?next=/profile" className={`${primaryButtonClass} w-full`}>Log in or sign up</Link>
         <RowList rows={[{ href: "/become-a-host", label: "Become a host", detail: "Open your table to travellers" }, ...infoRows]} />
-        <SampleDataNote />
       </div>
     );
   }
@@ -242,16 +189,14 @@ export function ProfileScreen() {
           <RowList title="About Mehman" rows={infoRows} />
           <button
             type="button"
-            onClick={() => {
-              signOut();
+            onClick={async () => {
+              await signOut();
               router.replace("/explore");
             }}
             className={secondaryButtonClass}
           >
             Log out
           </button>
-          <PreviewTools user={me} />
-          <SampleDataNote />
         </div>
       )}
     </RequireUser>

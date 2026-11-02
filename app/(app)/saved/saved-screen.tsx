@@ -6,15 +6,14 @@ import {
   formatWhen,
   PageTitle,
   RequireUser,
-  SampleDataNote,
 } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
 import { TableCard } from "@/app/_components/table-card";
 import { findExploreCity } from "@/data/experiences";
-import { mySavedTables, seatsLeft, upcomingSessions, useDemoState } from "@/lib/demo/store";
+import { mySavedTables, seatsLeft, upcomingSessions, useAppState } from "@/lib/data/store";
 
 export function SavedScreen() {
-  const state = useDemoState();
+  const state = useAppState();
 
   return (
     <RequireUser>
@@ -50,7 +49,6 @@ export function SavedScreen() {
                 })}
               </ul>
             )}
-            <SampleDataNote />
           </div>
         );
       }}

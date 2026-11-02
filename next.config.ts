@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
+  // Hosts' photos live in Supabase Storage.
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
+    ],
+  },
   partialPrefetching: true,
   // Cities used to be chosen with /explore?city=…; they now have their own
   // page. Keep this list in step with exploreCities in data/experiences.ts.

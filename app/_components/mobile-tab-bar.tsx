@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { currentUser, hostForUser, useDemoState } from "@/lib/demo/store";
+import { currentUser, hostForUser, useAppState } from "@/lib/data/store";
 import { navIcons as icons } from "./nav-icons";
 
 // Phone navigation, Airbnb-style: travelling tabs everywhere, and the
 // host's own tabs inside hosting mode. Wider screens use the header.
 export function MobileTabBar() {
   const pathname = usePathname();
-  const state = useDemoState();
+  const state = useAppState();
   const user = currentUser(state);
   const host = hostForUser(state, user?.id);
 

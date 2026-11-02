@@ -3,16 +3,20 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { focusRing, SampleDataNote } from "@/app/_components/app-ui";
+import { focusRing } from "@/app/_components/app-ui";
 import { isValidEmail, primaryButtonClass } from "@/app/_components/fields";
 import { MehmanLogo } from "@/app/_components/mehman-logo";
-import { signIn, updateProfile } from "@/lib/demo/store";
+import { sendLoginCode, signInWithGoogle, updateProfile, verifyLoginCode, type Login } from "@/lib/data/store";
 
 type Method = "email" | "phone";
 type Step =
   | { name: "start" }
   | { name: "code"; method: Method; destination: string }
   | { name: "profile"; fullName: string; phone: string };
+
+// Texting codes to Indian numbers needs an SMS provider with DLT
+// registration; the Phone option appears once that's set up in Supabase.
+const phoneLogin = process.env.NEXT_PUBLIC_PHONE_LOGIN === "on";
 
 const inputClass =
   "mt-2 block h-14 w-full rounded-full bg-[#f7efdd] px-6 text-lg text-[#1c1a17] placeholder:text-[#1c1a17]/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ivory";
@@ -33,13 +37,16 @@ function normalisePhone(value: string) {
 
 export function LoginFlow() {
   const router = useRouter();
-  const next = safeNext(useSearchParams().get("next"));
+  const params = useSearchParams();
+  const next = safeNext(params.get("next"));
   const uid = useId();
   const [step, setStep] = useState<Step>({ name: "start" });
   const [method, setMethod] = useState<Method>("email");
   const [value, setValue] = useState("");
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    params.get("error") === "google" ? "Google sign-in didn't finish. Please try again." : null,
+  );
   const [busy, setBusy] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -56,47 +63,59 @@ export function LoginFlow() {
     }
   }
 
-  function continueWithGoogle() {
-    // Preview: stands in for Google's sign-in window.
-    const result = signIn({ email: "you@gmail.com" });
-    if ("error" in result) return setError(result.error);
-    finish(result.value.fullName);
+  async function continueWithGoogle() {
+    setError(null);
+    setBusy(true);
+    // Leaves for Google's sign-in page; app/auth/callback brings them back.
+    const result = await signInWithGoogle(next);
+    if ("error" in result) {
+      setBusy(false);
+      setError(result.error);
+    }
   }
 
-  function sendCode(event: FormEvent) {
+  const loginFor = (m: Method, destination: string): Login =>
+    m === "email" ? { email: destination } : { phone: destination };
+
+  async function sendCode(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    let destination: string;
     if (method === "email") {
       if (!isValidEmail(value)) return setError("Please enter a valid email address.");
-      setStep({ name: "code", method, destination: value.trim().toLowerCase() });
+      destination = value.trim().toLowerCase();
     } else {
       const phone = normalisePhone(value);
       if (!phone) return setError("Please enter a 10-digit Indian mobile number.");
-      setStep({ name: "code", method, destination: phone });
+      destination = phone;
     }
+    setBusy(true);
+    const result = await sendLoginCode(loginFor(method, destination));
+    setBusy(false);
+    if ("error" in result) return setError(result.error);
+    setStep({ name: "code", method, destination });
     setCode("");
   }
 
-  function verifyCode(event: FormEvent) {
+  async function verifyCode(event: FormEvent) {
     event.preventDefault();
     if (step.name !== "code") return;
     if (!/^\d{6}$/.test(code)) return setError("Please enter the 6-digit code.");
+    setError(null);
     setBusy(true);
-    const result = signIn(
-      step.method === "email"
-        ? { email: step.destination }
-        : { phone: step.destination },
-    );
+    const result = await verifyLoginCode(loginFor(step.method, step.destination), code);
     setBusy(false);
     if ("error" in result) return setError(result.error);
     finish(result.value.fullName);
   }
 
-  function saveProfile(event: FormEvent) {
+  async function saveProfile(event: FormEvent) {
     event.preventDefault();
     if (step.name !== "profile") return;
     if (step.fullName.trim().length < 2) return setError("Please tell us your name.");
-    const result = updateProfile({ fullName: step.fullName, phone: step.phone });
+    setBusy(true);
+    const result = await updateProfile({ fullName: step.fullName, phone: step.phone });
+    setBusy(false);
     if ("error" in result) return setError(result.error);
     router.replace(next);
   }
@@ -124,6 +143,7 @@ export function LoginFlow() {
           <button
             type="button"
             onClick={continueWithGoogle}
+            disabled={busy}
             className={`mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-full bg-ivory text-base font-medium text-[#1c1a17] ${focusRing}`}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5">
@@ -137,10 +157,11 @@ export function LoginFlow() {
 
           <div className="my-7 flex items-center gap-4 text-xs tracking-[0.2em] text-ivory/45 uppercase">
             <span className="h-px flex-1 bg-ivory/15" />
-            or get a code
+            {phoneLogin ? "or get a code" : "or get a code by email"}
             <span className="h-px flex-1 bg-ivory/15" />
           </div>
 
+          {phoneLogin && (
           <div role="tablist" aria-label="Get your code by" className="grid grid-cols-2 rounded-full bg-ivory/[0.06] p-1 text-sm">
             {(["email", "phone"] as const).map((option) => (
               <button
@@ -161,6 +182,7 @@ export function LoginFlow() {
               </button>
             ))}
           </div>
+          )}
 
           <form noValidate onSubmit={sendCode} className="mt-5">
             <label htmlFor={`${uid}-login`} className="sr-only">
@@ -177,8 +199,8 @@ export function LoginFlow() {
               className={inputClass}
             />
             {errorNote}
-            <button type="submit" className={`${primaryButtonClass} mt-4 w-full`}>
-              Send me a code
+            <button type="submit" disabled={busy} className={`${primaryButtonClass} mt-4 w-full`}>
+              {busy ? "Sending…" : "Send me a code"}
             </button>
           </form>
         </div>
@@ -205,7 +227,6 @@ export function LoginFlow() {
             onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
             className={`${inputClass} mt-6 text-center text-2xl tracking-[0.6em]`}
           />
-          <p className="mt-2 text-center text-xs text-ivory/45">Preview: any 6 digits will work.</p>
           {errorNote}
           <button type="submit" disabled={busy} className={`${primaryButtonClass} mt-5 w-full`}>
             Continue
@@ -253,15 +274,17 @@ export function LoginFlow() {
             Shared with a host only after they accept your booking.
           </p>
           {errorNote}
-          <button type="submit" className={`${primaryButtonClass} mt-6 w-full`}>
+          <button type="submit" disabled={busy} className={`${primaryButtonClass} mt-6 w-full`}>
             Done
           </button>
         </form>
       )}
 
-      <div className="mt-auto pt-10">
-        <SampleDataNote />
-      </div>
+      <p className="mt-auto pt-10 text-xs leading-relaxed text-ivory/50">
+        By continuing, you agree to Mehman&rsquo;s{" "}
+        <Link href="/terms" className={`rounded underline underline-offset-4 ${focusRing}`}>Terms</Link> and{" "}
+        <Link href="/privacy" className={`rounded underline underline-offset-4 ${focusRing}`}>Privacy Policy</Link>.
+      </p>
     </div>
   );
 }
