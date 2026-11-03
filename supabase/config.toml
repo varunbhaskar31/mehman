@@ -38,3 +38,11 @@ user = "varunbhaskar31@gmail.com"
 pass = "env(SMTP_PASS)"
 admin_email = "varunbhaskar31@gmail.com"
 sender_name = "Mehman"
+
+# Google sign-in. The OAuth client lives in Google Cloud project "Mehman";
+# its ID and secret are in .env.local (never committed).
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+skip_nonce_check = false
