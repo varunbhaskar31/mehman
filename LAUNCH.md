@@ -4,32 +4,20 @@ The app runs on Supabase: real accounts, real hosts, real bookings. There is
 no sample data any more. These steps need your logins, so they're done by
 hand.
 
-## 1. Create the Supabase project
+## 1. Supabase project — done
 
-The old project (`rlopcnjufynbqdutzstt`) no longer exists.
+The project is **mehman** (`rlopcnjufynbqdutzstt`, South Asia (Mumbai)). All
+three files in `supabase/migrations` are applied, and the URL and publishable
+key are in `.env.local` and Netlify. After changing the schema or
+`supabase/config.toml`, push again:
 
-1. In [supabase.com/dashboard](https://supabase.com/dashboard), create a
-   project named **mehman** in **South Asia (Mumbai)**. Save the database
-   password in a password manager.
-2. Apply the schema and settings from this folder:
+```bash
+npx supabase db push        # new files in supabase/migrations
+npx supabase config push    # login-code email, sender, redirect URLs
+```
 
-   ```bash
-   npx supabase login
-   npx supabase link --project-ref <new-project-ref>
-   npx supabase db push        # the three files in supabase/migrations
-   npx supabase config push    # login-code email, redirect URLs
-   ```
-
-3. Under **Project Settings → API Keys**, copy the URL and the publishable
-   key into `.env.local`, and into Netlify (**Site configuration →
-   Environment variables**):
-
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://<new-project-ref>.supabase.co
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-   ```
-
-   `NEXT_PUBLIC_AUTH_MODE` is no longer used. Delete it if it's set.
+`config push` needs `SMTP_PASS` from `.env.local` loaded in the shell (see
+step 3). `NEXT_PUBLIC_AUTH_MODE` is no longer used. Delete it if it's set.
 
 ## 2. Turn on Google sign-in
 
@@ -43,10 +31,18 @@ The old project (`rlopcnjufynbqdutzstt`) no longer exists.
 
 ## 3. Email codes
 
-These work as soon as the project exists, but Supabase's built-in mailer
-sends only a few emails an hour. Before inviting people, set up custom SMTP
-(for example Resend or Amazon SES) under **Authentication → Emails → SMTP
-Settings**. Send from an address on a domain you own.
+For now, login codes are sent from your Gmail (`varunbhaskar31@gmail.com`,
+shown as "Mehman"), up to about 500 a day:
+
+1. At [myaccount.google.com](https://myaccount.google.com) → **Security**,
+   turn on 2-Step Verification, then create an **App password** named Mehman.
+2. Add it to `.env.local` as `SMTP_PASS=...` and run `npx supabase config push`.
+
+Before inviting people widely, move to Resend on Mehman's own domain: verify
+the domain in Resend, then change the `[auth.email.smtp]` block in
+`supabase/config.toml` (host `smtp.resend.com`, port 465, user `resend`, the
+Resend API key as `SMTP_PASS`, `admin_email` an address on the domain) and
+push again.
 
 ## 4. Phone codes (optional, later)
 

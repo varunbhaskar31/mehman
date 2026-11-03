@@ -26,5 +26,15 @@ content_path = "./supabase/templates/login-code.html"
 subject = "Your Mehman login code"
 content_path = "./supabase/templates/login-code.html"
 
-# The 6-digit-code email template (templates/login-code.html) can only be
-# pushed once a custom SMTP sender is configured; see README.
+# Login codes are sent from the owner's Gmail with an app password
+# (SMTP_PASS in .env.local, never committed). Supabase only uses the code
+# template above once a custom sender like this is set. Move to Resend on
+# Mehman's own domain before launch; see LAUNCH.md.
+[auth.email.smtp]
+enabled = true
+host = "smtp.gmail.com"
+port = 587
+user = "varunbhaskar31@gmail.com"
+pass = "env(SMTP_PASS)"
+admin_email = "varunbhaskar31@gmail.com"
+sender_name = "Mehman"

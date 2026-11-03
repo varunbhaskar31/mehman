@@ -1,8 +1,87 @@
-<div style="background:#142116;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#f6efdf">
-  <div style="max-width:420px;margin:0 auto;text-align:center">
-    <p style="margin:0;font-family:Georgia,serif;font-size:28px">Mehman</p>
-    <p style="margin:24px 0 8px;font-size:16px;color:#d9d1c0">Aao, khana tayyar hai. Here is your code:</p>
-    <p style="margin:0;font-size:36px;letter-spacing:10px;font-weight:bold;color:#e8c08f">{{ .Token }}</p>
-    <p style="margin:24px 0 0;font-size:13px;color:#a8a294">It works for 15 minutes. If you didn't ask for this, you can ignore this email.</p>
-  </div>
-</div>
+<!-- Login-code email. Inline styles and tables only: most mail apps strip
+     <style> blocks and don't load web fonts, so Georgia stands in for the
+     site's serif. Colours are the site's browns (app/globals.css). -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a110b">
+  <tr>
+    <td align="center" style="padding:40px 16px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:440px;font-family:Arial,Helvetica,sans-serif;color:#f6efdf">
+        <tr>
+          <td align="center" style="font-family:Georgia,'Times New Roman',serif;font-size:30px;letter-spacing:1px;color:#f6e7cc">Mehman</td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:28px 0 6px;font-family:Georgia,'Times New Roman',serif;font-size:20px;font-style:italic;color:#d88c6a">Aao, khana tayyar hai.</td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:0 0 18px;font-size:15px;color:#d9cdb8">Come in, food's ready. Here is your code:</td>
+        </tr>
+        <tr>
+          <td align="center">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background:#2a1b11;border:1px solid #4a3324;border-radius:14px">
+              <tr>
+                <td align="center" style="padding:18px 28px;font-size:36px;letter-spacing:10px;font-weight:bold;color:#e8c08f">{{ .Token }}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:14px 0 0;font-size:13px;color:#a8998a">It works for 15 minutes.</td>
+        </tr>
+
+        <tr>
+          <td style="padding:36px 0 0">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#2a1b11;border-radius:16px">
+              <tr>
+                <td style="padding:26px 24px 24px">
+                  <p style="margin:0 0 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#d88c6a">What happens next</p>
+                  <p style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:20px;line-height:1.3;color:#f6e7cc">Come hungry. Leave with stories.</p>
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td width="40" valign="top" style="padding:0 0 18px">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" width="28" height="28" style="width:28px;height:28px;border-radius:14px;background:#a54824;font-size:13px;font-weight:bold;color:#f6efdf">1</td></tr></table>
+                      </td>
+                      <td valign="top" style="padding:0 0 18px">
+                        <p style="margin:2px 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:17px;color:#f6e7cc">Enter your code</p>
+                        <p style="margin:0;font-size:14px;line-height:1.55;color:#d9cdb8">Pop it into Mehman and you're in.</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td width="40" valign="top" style="padding:0 0 18px">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" width="28" height="28" style="width:28px;height:28px;border-radius:14px;background:#a54824;font-size:13px;font-weight:bold;color:#f6efdf">2</td></tr></table>
+                      </td>
+                      <td valign="top" style="padding:0 0 18px">
+                        <p style="margin:2px 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:17px;color:#f6e7cc">Pick your table</p>
+                        <p style="margin:0;font-size:14px;line-height:1.55;color:#d9cdb8">Choose a family and the food you've been craving: a Chettinad thali, a Bengali Sunday lunch, Kashmiri wazwan.</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td width="40" valign="top" style="padding:0 0 18px">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" width="28" height="28" style="width:28px;height:28px;border-radius:14px;background:#a54824;font-size:13px;font-weight:bold;color:#f6efdf">3</td></tr></table>
+                      </td>
+                      <td valign="top" style="padding:0 0 18px">
+                        <p style="margin:2px 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:17px;color:#f6e7cc">Come hungry</p>
+                        <p style="margin:0;font-size:14px;line-height:1.55;color:#d9cdb8">Ring the bell. The family takes it from there, with seconds, thirds and the stories behind every dish.</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td width="40" valign="top" style="padding:0">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" width="28" height="28" style="width:28px;height:28px;border-radius:14px;background:#a54824;font-size:13px;font-weight:bold;color:#f6efdf">4</td></tr></table>
+                      </td>
+                      <td valign="top" style="padding:0">
+                        <p style="margin:2px 0 4px;font-family:Georgia,'Times New Roman',serif;font-size:17px;color:#f6e7cc">Leave with stories</p>
+                        <p style="margin:0;font-size:14px;line-height:1.55;color:#d9cdb8">And with a few new friends, and maybe a steel dabba "for tomorrow."</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding:28px 8px 0;font-size:12px;line-height:1.6;color:#8c7d6e">If you didn't ask for this code, you can ignore this email. Nobody can sign in without it.</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
