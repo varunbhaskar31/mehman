@@ -148,5 +148,37 @@ await expectErr("others can't edit", () => as(C, "select update_table($1, $2)", 
 await expectOk("team approves changes", () => as(ADMIN, `select review_table_changes('${dTable}', true, '')`));
 await expectOk("team pauses table", () => as(ADMIN, `select admin_set_table_paused('${dTable}', true)`));
 await expectErr("guest can't pause tables", () => as(C, `select admin_set_table_paused('${dTable}', false)`));
+// Hosts pin a rough area; it's moved off the exact spot and kept in the city.
+await expectErr("guest can't set an area", () => as(C, "select set_my_area(9.99, 76.29)"));
+await expectErr("area must be in the host's city", () => as(D, "select set_my_area(26.91, 75.79)"));
+await expectOk("host sets area", () => as(D, "select set_my_area(10.0, 76.3)"));
+await expectRows("area is moved 250-500 m", 1, () => as(D, `select * from hosts where user_id='${D}'
+  and sqrt(power((area_lat - 10.0) * 111320, 2) + power((area_lng - 76.3) * 111320 * cos(radians(10.0)), 2)) between 240 and 510`));
+await expectErr("can't write area directly", () => as(D, `update hosts set area_lat = 10 where user_id='${D}' returning id`).then(r => { if (!r.rows.length) throw new Error("no rows"); }));
+
+// Chat: guests message about a table; hosts reply.
+await expectOk("team relaunches Sadya", () => as(ADMIN, `select admin_set_table_paused('${dTable}', false)`));
+await expectErr("anon can't message", () => as(null, `select send_message('${dTable}', '${B}', 'hi')`));
+await expectErr("can't message as someone else", () => as(C, `select send_message('${dTable}', '${B}', 'hi')`));
+await expectErr("host can't message own table as a guest", () => as(D, `select send_message('${dTable}', '${D}', 'hi')`));
+await expectErr("empty message", () => as(B, `select send_message('${dTable}', '${B}', '   ')`));
+await expectErr("host can't start a chat with a stranger", () => as(D, `select send_message('${dTable}', '${C}', 'hello')`));
+const conv = (await expectOk("guest messages host", () => as(B, `select send_message('${dTable}', '${B}', 'Is it very spicy?') as id`))).rows[0].id;
+await expectOk("guest sends another", () => as(B, `select send_message('${dTable}', '${B}', 'Also, kids ok?')`));
+await expectRows("host told once per unread stretch", 1, () => as(D, "select * from notifications where title like 'New message from Bilal%'"));
+await expectRows("host sees unread chat", 1, () => as(D, "select * from my_conversations() where unread and as_host and other_name='Bilal'"));
+await expectRows("guest's own messages aren't unread", 0, () => as(B, "select * from my_conversations() where unread"));
+await expectRows("host reads messages", 2, () => as(D, `select * from messages where conversation_id='${conv}'`));
+await expectRows("others can't read messages", 0, () => as(C, "select * from messages"));
+await expectRows("others can't see the chat", 0, () => as(C, "select * from my_conversations()"));
+await expectErr("can't insert messages directly", () => as(B, `insert into messages (conversation_id, sender_id, body) values ('${conv}', '${B}', 'x')`));
+await expectRows("host still can't see guest's profile", 0, () => as(D, `select * from profiles where id='${B}'`));
+await expectOk("host marks read", () => as(D, `select mark_conversation_read('${conv}')`));
+await expectRows("now read", 0, () => as(D, "select * from my_conversations() where unread"));
+await expectOk("host replies", () => as(D, `select send_message('${dTable}', '${B}', 'Mild! Kids welcome.')`));
+await expectRows("guest told", 1, () => as(B, "select * from notifications where title like 'New message from Devi%'"));
+await expectRows("guest sees unread reply", 1, () => as(B, "select * from my_conversations() where unread and not as_host and last_body like 'Mild%'"));
+await expectRows("one conversation per guest per table", 1, () => as(B, "select * from conversations"));
+await expectOk("host of an earlier booking can message that guest", () => as(A, `select send_message('${table}', '${C}', 'Thanks for coming!')`));
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) process.exitCode = 1;

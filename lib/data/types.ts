@@ -108,6 +108,28 @@ export type SavedTable = {
 };
 
 // Everything the signed-in visitor is allowed to see.
+// A chat between a guest and a host about one table, as one side sees it.
+export type Conversation = {
+  id: string;
+  tableId: string;
+  guestId: string;
+  asHost: boolean;
+  otherName: string;
+  tableTitle: string;
+  lastBody: string;
+  lastSenderId: string | null;
+  lastMessageAt: string;
+  unread: boolean;
+};
+
+export type ChatMessage = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+};
+
 export type AppState = {
   currentUserId: string | null;
   profiles: Profile[];
@@ -118,4 +140,5 @@ export type AppState = {
   reviews: Review[];
   notifications: AppNotification[];
   saved: SavedTable[];
+  conversations: Conversation[];
 };

@@ -8,6 +8,8 @@ import type {
   AppNotification,
   AppState,
   Booking,
+  ChatMessage,
+  Conversation,
   BookingStatus,
   DiningSession,
   DiningTable,
@@ -31,6 +33,7 @@ const emptyState: AppState = {
   reviews: [],
   notifications: [],
   saved: [],
+  conversations: [],
 };
 
 let state: AppState = emptyState;
@@ -133,7 +136,7 @@ async function load(): Promise<AppState> {
   const { data: auth } = await supabase.auth.getSession();
   const uid = auth.session?.user.id ?? null;
 
-  const [profilesR, hostsR, privateR, tablesR, sessionsR, bookingsR, reviewsR, notesR, savedR] =
+  const [profilesR, hostsR, privateR, tablesR, sessionsR, bookingsR, reviewsR, notesR, savedR, chatsR] =
     await Promise.all([
       uid ? supabase.from("profiles").select("id, email, full_name, phone, role, created_at") : none,
       supabase.from("hosts").select("*"),
@@ -146,6 +149,7 @@ async function load(): Promise<AppState> {
         ? supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(100)
         : none,
       uid ? supabase.from("saved_tables").select("*") : none,
+      uid ? supabase.rpc("my_conversations") : none,
     ]);
 
   const sessionRows = rows(sessionsR, "dates");
@@ -267,7 +271,20 @@ async function load(): Promise<AppState> {
     savedAt: x.saved_at as string,
   }));
 
-  return { currentUserId: uid, profiles, hosts, tables, sessions, bookings, reviews, notifications, saved };
+  const conversations: Conversation[] = rows(chatsR, "messages").map((c) => ({
+    id: c.id as string,
+    tableId: c.table_id as string,
+    guestId: c.guest_id as string,
+    asHost: c.as_host as boolean,
+    otherName: c.other_name as string,
+    tableTitle: c.table_title as string,
+    lastBody: (c.last_body as string | null) ?? "",
+    lastSenderId: (c.last_sender as string | null) ?? null,
+    lastMessageAt: c.last_message_at as string,
+    unread: c.unread as boolean,
+  }));
+
+  return { currentUserId: uid, profiles, hosts, tables, sessions, bookings, reviews, notifications, saved, conversations };
 }
 
 // ------------------------------------------------------------- changes
@@ -439,7 +456,9 @@ async function uploadPhotos(photos: string[]): Promise<Result<string[]>> {
     const blob = await (await fetch(photo)).blob();
     const extension = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
     const path = `${me}/${crypto.randomUUID()}.${extension}`;
-    const { error } = await storage.upload(path, blob, { contentType: blob.type, cacheControl: "31536000" });
+    // Sent as raw bytes: storage-js 2.117 wraps a Blob in a form field with
+    // no name, and the server then stores an empty text file.
+    const { error } = await storage.upload(path, await blob.arrayBuffer(), { contentType: blob.type, cacheControl: "31536000" });
     if (error) {
       console.error("[photos]", error);
       return fail("A photo didn't upload. Check your connection and try again.");
@@ -460,7 +479,23 @@ export type HostApplication = {
   dates: { startsAt: string; seats: number }[];
 };
 
-export async function applyAsHost(application: HostApplication): Promise<Result> {
+// Pins the host's neighbourhood on the map. The database moves the point a
+// few hundred metres before saving it, so it never marks the house.
+export function setMyArea(area: { lat: number; lng: number }) {
+  return rpc("set_my_area", { p_lat: area.lat, p_lng: area.lng });
+}
+
+// From My table: a new neighbourhood name and pin.
+export async function updateMyNeighbourhood(hostId: string, locality: string, area: { lat: number; lng: number }): Promise<Result> {
+  const { error } = await db().from("hosts").update({ locality: locality.trim() }).eq("id", hostId);
+  if (error) return fail(friendly(error));
+  return setMyArea(area);
+}
+
+export async function applyAsHost(
+  application: HostApplication,
+  area: { lat: number; lng: number } | null,
+): Promise<Result> {
   if (!currentUser(state)) return fail("Please log in to apply.");
   if (hostForUser(state, state.currentUserId)) return fail("You've already applied to host.");
   const photos = await uploadPhotos(application.table.photos);
@@ -488,7 +523,11 @@ export async function applyAsHost(application: HostApplication): Promise<Result>
     },
     p_dates: application.dates.map((d) => ({ starts_at: d.startsAt, seats: d.seats })),
   });
-  return "error" in result ? result : { ok: true, value: undefined };
+  if ("error" in result) return result;
+  // The application is in either way; a missing pin can be added from
+  // My table.
+  if (area) await setMyArea(area);
+  return { ok: true, value: undefined };
 }
 
 export function addSessions(tableId: string, startsAts: string[], seats: number) {
@@ -587,6 +626,66 @@ export function replyToReview(reviewId: string, reply: string) {
 
 export function markNotificationsRead() {
   return rpc("mark_notifications_read", {});
+}
+
+// ----------------------------------------------------------------- chat
+
+// Conversations are keyed by table and guest, so a chat can open before
+// its first message.
+export function findConversation(s: AppState, tableId: string, guestId: string) {
+  return s.conversations.find((c) => c.tableId === tableId && c.guestId === guestId) ?? null;
+}
+
+export function unreadChats(s: AppState, asHost: boolean) {
+  return s.conversations.filter((c) => c.unread && c.asHost === asHost).length;
+}
+
+export async function loadMessages(conversationId: string): Promise<ChatMessage[]> {
+  const { data, error } = await db()
+    .from("messages")
+    .select("*")
+    .eq("conversation_id", conversationId)
+    .order("created_at");
+  if (error) {
+    console.error("[chat]", error);
+    return [];
+  }
+  return (data as Row[]).map(toMessage);
+}
+
+function toMessage(m: Row): ChatMessage {
+  return {
+    id: m.id as string,
+    conversationId: m.conversation_id as string,
+    senderId: m.sender_id as string,
+    body: m.body as string,
+    createdAt: m.created_at as string,
+  };
+}
+
+// Calls back with each new message in the conversation as it arrives.
+export function watchMessages(conversationId: string, onMessage: (message: ChatMessage) => void) {
+  const channel = db()
+    .channel(`chat-${conversationId}`)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
+      (payload) => onMessage(toMessage(payload.new as Row)),
+    )
+    .subscribe();
+  return () => {
+    void db().removeChannel(channel);
+  };
+}
+
+export function sendMessage(tableId: string, guestId: string, body: string) {
+  return rpc<string>("send_message", { p_table_id: tableId, p_guest_id: guestId, p_body: body });
+}
+
+export async function markConversationRead(conversationId: string) {
+  const { error } = await db().rpc("mark_conversation_read", { p_conversation_id: conversationId });
+  if (error) console.error("[chat]", error);
+  else await refresh();
 }
 
 // ---------------------------------------------------------------- saved

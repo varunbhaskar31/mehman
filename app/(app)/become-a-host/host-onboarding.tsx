@@ -11,7 +11,9 @@ import {
   formatWhen,
   secondaryButtonClass,
 } from "@/app/_components/app-ui";
+import { AreaPicker } from "@/app/_components/area-picker";
 import { primaryButtonClass, SelectField, TextField } from "@/app/_components/fields";
+import type { LatLng } from "@/data/city-map";
 import { exploreCities } from "@/data/experiences";
 import {
   applyAsHost,
@@ -33,6 +35,7 @@ type Draft = {
   languages: string[];
   cityId: string;
   locality: string;
+  area: LatLng | null;
   address: string;
   contactPhone: string;
   title: string;
@@ -52,6 +55,7 @@ const emptyDraft: Draft = {
   languages: [],
   cityId: exploreCities[0].id,
   locality: "",
+  area: null,
   address: "",
   contactPhone: "",
   title: "",
@@ -76,6 +80,7 @@ function validateStep(step: number, d: Draft): Errors {
   }
   if (step === 1) {
     if (d.locality.trim().length < 3) e.locality = "Which neighbourhood are you in? Guests search by it.";
+    else if (!d.area) e.area = "We need to place your table on the map. Check your neighbourhood's spelling, or use your current location.";
     if (d.address.trim().length < 10) e.address = "Please enter your full address.";
     if (d.contactPhone.replace(/\D/g, "").length < 10) e.contactPhone = "Please enter a mobile number guests can reach on the day.";
   }
@@ -225,7 +230,7 @@ export function HostOnboarding() {
         photos: draft.photos,
       },
       dates: draft.dates,
-    });
+    }, draft.area);
     if ("error" in result) {
       setSubmitting(false);
       return setSubmitError(result.error);
@@ -282,6 +287,7 @@ export function HostOnboarding() {
           <>
             <SelectField id={f("city")} label="City" value={draft.cityId} onChange={set("cityId")} options={exploreCities.map((c) => ({ id: c.id, name: c.name }))} />
             <TextField id={f("locality")} label="Neighbourhood" hint="Shown to guests, like Koramangala or Bani Park. Never your exact address." autoComplete="address-level3" value={draft.locality} onChange={set("locality")} error={errors.locality} maxLength={60} />
+            <AreaPicker city={city} locality={draft.locality} area={draft.area} onChange={(area) => { setDraft((d) => ({ ...d, area })); if (area) setErrors((e) => ({ ...e, area: undefined })); }} error={errors.area} />
             <TextField id={f("address")} label="Home address" hint="Private. Shared only with guests whose booking you accept." multiline value={draft.address} onChange={set("address")} error={errors.address} maxLength={300} />
             <TextField id={f("contactPhone")} label="Mobile number for guests" hint="Private, same as your address." autoComplete="tel" value={draft.contactPhone} onChange={set("contactPhone")} error={errors.contactPhone} maxLength={20} />
           </>

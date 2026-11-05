@@ -187,6 +187,17 @@ export function TableScreen({ tableId }: { tableId: string }) {
               </div>
             </div>
             <p className="mt-3 leading-relaxed text-ivory/80 md:mt-6">{host.bio}</p>
+            {!isOwnTable && (
+              <Link
+                href={user ? `/messages?table=${table.id}&guest=${user.id}` : `/login?next=${encodeURIComponent(`/tables/${table.id}`)}`}
+                className={`${secondaryButtonClass} mt-4 gap-2`}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="size-4">
+                  <path d="M4 5.5h16v10H9l-4 3.5v-3.5H4z" />
+                </svg>
+                {user ? `Message ${host.displayName.split(" ")[0]}` : "Log in to message the host"}
+              </Link>
+            )}
           </section>
 
           <section className={sectionRule}>

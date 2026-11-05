@@ -89,6 +89,9 @@ export function GuestBookingCard({ state, booking }: { state: AppState; booking:
             <button type="button" onClick={() => act("declined")} className={secondaryButtonClass}>Decline</button>
           </>
         )}
+        {(booking.status === "requested" || (booking.status === "accepted" && !started)) && (
+          <Link href={`/host/messages?table=${session.tableId}&guest=${booking.guestId}`} className={secondaryButtonClass}>Message</Link>
+        )}
         {booking.status === "accepted" && started && (
           <>
             <button type="button" onClick={() => act("completed")} className={primaryButtonClass}>They came</button>

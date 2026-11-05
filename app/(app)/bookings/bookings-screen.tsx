@@ -84,7 +84,10 @@ function TripCard({ state, booking }: { state: AppState; booking: Booking }) {
 
       <div className="space-y-3 border-t border-ivory/10 px-4 py-4 text-sm">
         {booking.status === "requested" && (
-          <p className="text-ivory/70">Waiting for {host.displayName} to reply. The address appears here once they accept.</p>
+          <div className="space-y-2">
+            <p className="text-ivory/70">Waiting for {host.displayName} to reply. The address appears here once they accept.</p>
+            <Link href={`/messages?table=${table.id}&guest=${booking.guestId}`} className={secondaryButtonClass}>Message host</Link>
+          </div>
         )}
         {booking.status === "accepted" && (
           <div className="space-y-2">
@@ -97,6 +100,7 @@ function TripCard({ state, booking }: { state: AppState; booking: Booking }) {
               {formatPrice(booking.pricePerGuest * booking.partySize)} (UPI or cash)
             </p>
             <div className="flex flex-wrap gap-2 pt-1">
+              <Link href={`/messages?table=${table.id}&guest=${booking.guestId}`} className={secondaryButtonClass}>Message</Link>
               <a href={`tel:${hostPhone}`} className={secondaryButtonClass}>Call host</a>
               <a href={`https://wa.me/${hostPhone.replace("+", "")}`} target="_blank" rel="noreferrer" className={secondaryButtonClass}>WhatsApp</a>
               <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(host.address)}`} target="_blank" rel="noreferrer" className={secondaryButtonClass}>Directions</a>

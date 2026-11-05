@@ -8,6 +8,7 @@ import {
   hostForUser,
   myNotifications,
   signOut,
+  unreadChats,
   useAppReady,
   useAppState,
 } from "@/lib/data/store";
@@ -23,9 +24,12 @@ function initials(name: string, email: string) {
 
 type MenuItem = { href: string; label: string; strong?: boolean };
 
+type Mode = "travelling" | "host" | "admin";
+
 // Desktop only, like Airbnb's: a rounded ☰ + avatar button that opens
-// everything personal. (Phones use the bottom tabs instead.)
-export function AccountButton() {
+// everything personal. (Phones use the bottom tabs instead.) In hosting
+// mode and the team console it keeps people where they are.
+export function AccountButton({ mode = "travelling" }: { mode?: Mode }) {
   const ready = useAppReady();
   const state = useAppState();
   const user = currentUser(state);
@@ -57,26 +61,53 @@ export function AccountButton() {
     { href: "/our-story", label: "Our story" },
     { href: "mailto:hello@mehman.in", label: "Get help" },
   ];
-  const groups: MenuItem[][] = user
-    ? [
-        [
-          { href: "/bookings", label: "My bookings", strong: true },
-          { href: "/saved", label: "Saved", strong: true },
-          { href: "/updates", label: unread ? `Updates (${unread} new)` : "Updates", strong: true },
-          { href: "/profile", label: "Profile", strong: true },
-        ],
-        [
-          user.role === "admin"
-            ? { href: "/admin", label: "Open team console" }
-            : { href: isHost ? "/host" : "/become-a-host", label: isHost ? "Switch to hosting" : "Become a host" },
-        ],
-        about,
-      ]
-    : [
-        [{ href: "/login", label: "Log in or sign up", strong: true }],
-        [{ href: "/become-a-host", label: "Become a host" }],
-        about,
-      ];
+  const updatesLabel = unread ? `Updates (${unread} new)` : "Updates";
+  const messagesLabel = (asHost: boolean) => {
+    const count = unreadChats(state, asHost);
+    return count ? `Messages (${count} new)` : "Messages";
+  };
+  let groups: MenuItem[][];
+  if (!user) {
+    groups = [
+      [{ href: "/login", label: "Log in or sign up", strong: true }],
+      [{ href: "/become-a-host", label: "Become a host" }],
+      about,
+    ];
+  } else if (mode === "host") {
+    groups = [
+      [
+        { href: "/host/messages", label: messagesLabel(true), strong: true },
+        { href: "/host/updates", label: updatesLabel, strong: true },
+        { href: "mailto:hello@mehman.in?subject=Help%20with%20hosting", label: "Help with hosting", strong: true },
+      ],
+      [{ href: "/explore", label: "Switch to travelling" }],
+    ];
+  } else if (mode === "admin") {
+    groups = [
+      [
+        { href: "/admin", label: "Review", strong: true },
+        { href: "/admin/hosts", label: "Hosts", strong: true },
+        { href: "/admin/bookings", label: "Bookings", strong: true },
+      ],
+      [{ href: "/explore", label: "Switch to travelling" }],
+    ];
+  } else {
+    groups = [
+      [
+        { href: "/bookings", label: "My bookings", strong: true },
+        { href: "/messages", label: messagesLabel(false), strong: true },
+        { href: "/saved", label: "Saved", strong: true },
+        { href: "/updates", label: updatesLabel, strong: true },
+        { href: "/profile", label: "Profile", strong: true },
+      ],
+      [
+        user.role === "admin"
+          ? { href: "/admin", label: "Open team console" }
+          : { href: isHost ? "/host" : "/become-a-host", label: isHost ? "Switch to hosting" : "Become a host" },
+      ],
+      about,
+    ];
+  }
 
   return (
     <div ref={rootRef} className="relative">

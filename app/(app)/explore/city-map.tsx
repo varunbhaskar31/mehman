@@ -147,57 +147,88 @@ export function CityMap({
     };
   }, [cities]);
 
-  // Highlight the city and fly to it.
+  // Highlight the city and glide to it. Going between cities, the old
+  // city's glow fades, the map glides across, and the new boundary and its
+  // pins appear once it lands.
   useEffect(() => {
     const L = leafletRef.current;
     const map = mapRef.current;
     const layer = cityLayerRef.current;
-    if (!ready || !L || !map || !layer) return;
-    layer.clearLayers();
+    const container = containerRef.current;
+    if (!ready || !L || !map || !layer || !container) return;
+
     const rings = cityBoundaries[city.id];
-    if (!rings) {
-      map.flyTo([city.coords.lat, city.coords.lng], 11);
+    const target = rings
+      ? L.polygon(rings).getBounds()
+      : L.latLng(city.coords.lat, city.coords.lng).toBounds(24000);
+    const padding: [number, number] = [20, 20];
+    const reduced = prefersReducedMotion();
+    const first = firstFlyRef.current;
+    firstFlyRef.current = false;
+
+    const drawCity = (fade: boolean) => {
+      layer.clearLayers();
+      if (!rings) return;
+      const world: [number, number][] = [
+        [85, -180],
+        [85, 180],
+        [-85, 180],
+        [-85, -180],
+      ];
+      const fadeClass = fade ? " city-map-fade-in" : "";
+      L.polygon([world, ...rings], {
+        stroke: false,
+        fillColor: "#120b07",
+        fillOpacity: 0.62,
+        interactive: false,
+        className: `city-map-mask${fadeClass}`,
+      }).addTo(layer);
+      L.polygon(rings, {
+        color: "#e3b26b",
+        weight: 2,
+        fillColor: "#c8643b",
+        fillOpacity: 0.08,
+        interactive: false,
+        className: `city-map-outline${fadeClass}`,
+      }).addTo(layer);
+    };
+
+    if (reduced) {
+      drawCity(false);
+      map.fitBounds(target, { padding });
       return;
     }
 
-    const world: [number, number][] = [
-      [85, -180],
-      [85, 180],
-      [-85, 180],
-      [-85, -180],
-    ];
-    L.polygon([world, ...rings], {
-      stroke: false,
-      fillColor: "#120b07",
-      fillOpacity: 0.62,
-      interactive: false,
-      className: "city-map-mask",
-    }).addTo(layer);
-    const outline = L.polygon(rings, {
-      color: "#e3b26b",
-      weight: 2,
-      fillColor: "#c8643b",
-      fillOpacity: 0.08,
-      interactive: false,
-      className: "city-map-outline",
-    }).addTo(layer);
+    let timer = 0;
+    const land = () => {
+      drawCity(true);
+      container.removeAttribute("data-flying");
+    };
+    const glide = (duration: number) => {
+      map.once("moveend", land);
+      map.flyToBounds(target, { padding, duration, easeLinearity: 0.2 });
+    };
 
-    const bounds = outline.getBounds();
-    const padding: [number, number] = [20, 20];
-    if (prefersReducedMotion()) {
-      map.fitBounds(bounds, { padding });
-    } else if (firstFlyRef.current) {
+    container.setAttribute("data-flying", "");
+    if (first) {
       // Open on India for a beat, then swoop into the city.
-      const timer = window.setTimeout(
-        () => map.flyToBounds(bounds, { padding, duration: 2 }),
-        500,
-      );
-      firstFlyRef.current = false;
-      return () => window.clearTimeout(timer);
+      timer = window.setTimeout(() => glide(2), 500);
     } else {
-      map.flyToBounds(bounds, { padding, duration: 1.6 });
+      // Let the old city's glow fade first.
+      layer.eachLayer((shape) =>
+        (shape as Leaflet.Path).getElement()?.classList.add("city-map-fade-out"),
+      );
+      timer = window.setTimeout(() => {
+        layer.clearLayers();
+        const distance = map.getCenter().distanceTo(target.getCenter()) / 1000;
+        // Longer trips take a little longer, but never drag.
+        glide(Math.min(3, 1.6 + distance / 1500));
+      }, 280);
     }
-    firstFlyRef.current = false;
+    return () => {
+      window.clearTimeout(timer);
+      map.off("moveend", land);
+    };
   }, [ready, city]);
 
   // Host neighbourhoods and the visitor. Pins are only rebuilt when the
@@ -210,8 +241,9 @@ export function CityMap({
     pinsRef.current.clear();
     const touch = isTouch();
 
-    for (const host of hosts) {
+    hosts.forEach((host, index) => {
       const circle = L.circle([host.area.lat, host.area.lng], {
+        className: "city-map-area",
         radius: AREA_RADIUS_M,
         color: "#e3b26b",
         weight: 1,
@@ -228,7 +260,7 @@ export function CityMap({
           className: "city-map-host-icon",
           iconSize: [40, 40],
           iconAnchor: [20, 20],
-          html: `<span class="city-map-host"><span class="city-map-host-dot">${BOWL_ICON}</span><span class="city-map-host-label">${escapeHtml(host.locality)}</span></span>`,
+          html: `<span class="city-map-host" style="--i:${index}"><span class="city-map-host-dot">${BOWL_ICON}</span><span class="city-map-host-label">${escapeHtml(host.locality)}</span></span>`,
         }),
       })
         .bindTooltip(tipHtml(host, touch), {
@@ -247,7 +279,7 @@ export function CityMap({
         )
         .addTo(layer);
       pinsRef.current.set(host.id, { marker, circle });
-    }
+    });
 
     if (!visitor) return;
     L.marker([visitor.lat, visitor.lng], {

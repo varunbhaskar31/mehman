@@ -7,11 +7,15 @@ import {
   cardClass,
   focusRing,
   PageTitle,
+  secondaryButtonClass,
   StatusChip,
 } from "@/app/_components/app-ui";
+import { AreaPicker } from "@/app/_components/area-picker";
 import { primaryButtonClass, TextField } from "@/app/_components/fields";
-import { setOwnTablePaused, updateTable, type TableEdits } from "@/lib/data/store";
-import type { DiningTable, VegType } from "@/lib/data/types";
+import type { LatLng } from "@/data/city-map";
+import { exploreCities } from "@/data/experiences";
+import { setOwnTablePaused, updateMyNeighbourhood, updateTable, type TableEdits } from "@/lib/data/store";
+import type { DiningTable, Host, VegType } from "@/lib/data/types";
 import { resizePhoto } from "@/lib/photos";
 import { HostGate } from "../host-shell";
 
@@ -192,13 +196,56 @@ function Editor({ table }: { table: DiningTable }) {
   );
 }
 
+// The neighbourhood name and the pin guests see on Explore.
+function MapSpot({ host }: { host: Host }) {
+  const uid = useId();
+  const city = exploreCities.find((c) => c.id === host.cityId) ?? exploreCities[0];
+  const [locality, setLocality] = useState(host.locality ?? "");
+  const [area, setArea] = useState<LatLng | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+
+  async function save() {
+    if (locality.trim().length < 3) return setMessage({ tone: "error", text: "Which neighbourhood are you in?" });
+    if (!area) return setMessage({ tone: "error", text: "We couldn't place you on the map yet. Check the spelling, or use your current location." });
+    setSaving(true);
+    const result = await updateMyNeighbourhood(host.id, locality, area);
+    setSaving(false);
+    setMessage("error" in result ? { tone: "error", text: result.error } : { tone: "ok", text: "Saved. Guests see your new spot on Explore." });
+  }
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="font-serif text-2xl">Your spot on the map</h2>
+        <p className="mt-1 text-sm text-ivory/60">
+          {host.area ? "Guests find you on Explore by this neighbourhood." : "You're not on the Explore map yet. Add your neighbourhood so guests nearby can find you."}
+        </p>
+      </div>
+      <TextField id={`${uid}-locality`} label="Neighbourhood" hint={`Like a part of ${city.name} guests would know. Never your exact address.`} value={locality} onChange={setLocality} maxLength={60} />
+      <AreaPicker city={city} locality={locality} area={area} onChange={setArea} />
+      <div className="flex flex-wrap items-center gap-4">
+        <button type="button" onClick={() => void save()} disabled={saving} className={secondaryButtonClass}>
+          {saving ? "Saving…" : "Save my spot"}
+        </button>
+        {message && (
+          <p role="status" className={`text-sm ${message.tone === "error" ? "text-terracotta-soft" : "text-[#a9d9b1]"}`}>{message.text}</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function HostTable() {
   return (
     <HostGate>
-      {({ table }) => (
-        <div className="space-y-6">
-          <PageTitle kicker="My table" title={table?.title ?? "Your table"} />
-          {table ? <Editor key={table.id} table={table} /> : <p className={`${cardClass} text-ivory/70`}>No table yet.</p>}
+      {({ host, table }) => (
+        <div className="space-y-10">
+          <div className="space-y-6">
+            <PageTitle kicker="My table" title={table?.title ?? "Your table"} />
+            {table ? <Editor key={table.id} table={table} /> : <p className={`${cardClass} text-ivory/70`}>No table yet.</p>}
+          </div>
+          <MapSpot key={host.id} host={host} />
         </div>
       )}
     </HostGate>

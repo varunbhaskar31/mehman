@@ -4,7 +4,7 @@ import { AccountButton } from "./account-button";
 import { MehmanLogo } from "./mehman-logo";
 import { ModeSwitchLink } from "./mode-switch-link";
 import { navIcons } from "./nav-icons";
-import { NotificationBell } from "./notification-bell";
+import { MessagesButton, NotificationBell } from "./notification-bell";
 
 type Page =
   | "explore"
@@ -18,6 +18,8 @@ type Page =
   | "requests"
   | "table"
   | "earnings"
+  | "messages"
+  | "updates"
   | "admin-review"
   | "admin-hosts"
   | "admin-bookings";
@@ -59,7 +61,7 @@ const modeBadge = { travelling: null, host: "Hosting", admin: "Mehman team" };
 
 const pillLinkClass = `flex h-11 items-center rounded-full px-4 text-sm font-medium whitespace-nowrap text-ivory transition-colors hover:bg-ivory/10 ${focusRing}`;
 
-// Phones show just the logo and bell; the bottom tabs do the navigating.
+// Phones show just the logo, messages and bell; the bottom tabs do the navigating.
 // Wider screens get an Airbnb-style bar: logo, tabs in the middle, and
 // the mode switch, bell and account menu on the right.
 export function SiteHeader({ current, mode = "travelling" }: SiteHeaderProps) {
@@ -106,9 +108,10 @@ export function SiteHeader({ current, mode = "travelling" }: SiteHeaderProps) {
           </ul>
         </nav>
 
-        {/* Phones: just the updates bell; the tabs do the rest. */}
-        <div className="md:hidden">
-          <NotificationBell />
+        {/* Phones: messages and the updates bell; the tabs do the rest. */}
+        <div className="flex md:hidden">
+          <MessagesButton mode={mode} />
+          <NotificationBell mode={mode} />
         </div>
 
         <div className="hidden items-center gap-1 justify-self-end md:flex">
@@ -119,9 +122,10 @@ export function SiteHeader({ current, mode = "travelling" }: SiteHeaderProps) {
           ) : (
             <ModeSwitchLink className={pillLinkClass} />
           )}
-          <NotificationBell />
+          <MessagesButton mode={mode} />
+          <NotificationBell mode={mode} />
           <span className="ml-1">
-            <AccountButton />
+            <AccountButton mode={mode} />
           </span>
         </div>
       </div>
