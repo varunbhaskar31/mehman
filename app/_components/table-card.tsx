@@ -5,7 +5,7 @@ import Link from "next/link";
 import { focusRing, formatPrice } from "./app-ui";
 import { SaveButton } from "./save-button";
 import { tableRating, useAppState } from "@/lib/data/store";
-import type { DiningTable, Host } from "@/lib/data/types";
+import { dietLabel, type DiningTable, type Host } from "@/lib/data/types";
 
 const vegLabel = { veg: "Vegetarian", non_veg: "Non-vegetarian", both: "Veg & non-veg" };
 
@@ -44,7 +44,7 @@ export function TableCard({
             className={`object-cover transition-transform duration-700 group-hover:scale-105 ${dimmed ? "opacity-50 grayscale" : ""}`}
           />
           <span className="absolute top-3 left-3 rounded-full bg-pine/85 px-3 py-1 text-xs backdrop-blur md:bg-ivory md:font-medium md:text-pine md:shadow">
-            {vegLabel[table.veg]}
+            {table.dietTags.length ? table.dietTags.slice(0, 3).map((t) => dietLabel[t]).join(" · ") : vegLabel[table.veg]}
           </span>
         </div>
         <div className="mt-3 flex items-start justify-between gap-3 md:block">

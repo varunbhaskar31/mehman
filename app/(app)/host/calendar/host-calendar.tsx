@@ -28,6 +28,7 @@ function Calendar({ state, table }: { state: AppState; table: DiningTable }) {
   const [selected, setSelected] = useState<Date>(() => new Date());
   const [time, setTime] = useState("13:00");
   const [seats, setSeats] = useState(table.maxGuests);
+  const [slotLength, setSlotLength] = useState<120 | 180>(180);
   const [repeatWeeks, setRepeatWeeks] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -59,7 +60,7 @@ function Calendar({ state, table }: { state: AppState; table: DiningTable }) {
       d.setHours(hours, minutes, 0, 0);
       return d.toISOString();
     });
-    const result = await addSessions(table.id, starts, seats);
+    const result = await addSessions(table.id, starts, seats, slotLength);
     if ("error" in result) return setMessage(result.error);
     setMessage(result.value === 1 ? "Date added." : `${result.value} dates added.`);
   }
@@ -121,7 +122,7 @@ function Calendar({ state, table }: { state: AppState; table: DiningTable }) {
               return (
                 <li key={session.id} className="flex items-center justify-between rounded-xl border border-ivory/15 px-4 py-3">
                   <span>
-                    {timeName.format(new Date(session.startsAt))}
+                    {timeName.format(new Date(session.startsAt))} · {session.durationMinutes / 60} hours
                     <span className="block text-xs text-ivory/55">{taken} of {session.seatsTotal} seats taken or requested</span>
                   </span>
                   {!selectedIsPast && (
@@ -154,6 +155,14 @@ function Calendar({ state, table }: { state: AppState; table: DiningTable }) {
                 <label htmlFor={`${uid}-seats`} className="text-sm text-ivory/80">Seats</label>
                 <input id={`${uid}-seats`} type="number" min={1} max={table.maxGuests} value={seats} onChange={(e) => setSeats(Number(e.target.value))} className="mt-2 block w-full rounded-lg border border-ivory/25 bg-transparent px-3 py-2.5 text-ivory focus-visible:outline-2 focus-visible:outline-ivory" />
               </div>
+            </div>
+            <div>
+              <label htmlFor={`${uid}-length`} className="text-sm text-ivory/80">Length</label>
+              <select id={`${uid}-length`} value={slotLength} onChange={(e) => setSlotLength(Number(e.target.value) as 120 | 180)} className="mt-2 block w-full rounded-lg border border-ivory/25 bg-transparent px-3 py-2.5 text-ivory [color-scheme:dark] focus-visible:outline-2 focus-visible:outline-ivory">
+                <option value={120}>2 hours</option>
+                <option value={180}>3 hours</option>
+              </select>
+              <p className="mt-1.5 text-xs text-ivory/50">Requests close 1 hour before the start.</p>
             </div>
             <div>
               <label htmlFor={`${uid}-repeat`} className="text-sm text-ivory/80">Repeat</label>

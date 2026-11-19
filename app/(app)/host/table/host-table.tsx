@@ -11,6 +11,7 @@ import {
   StatusChip,
 } from "@/app/_components/app-ui";
 import { AreaPicker } from "@/app/_components/area-picker";
+import { DietTagPicker, UpiForm, VenueForm, VerificationUploads } from "@/app/_components/host-details";
 import { primaryButtonClass, TextField } from "@/app/_components/fields";
 import type { LatLng } from "@/data/city-map";
 import { exploreCities } from "@/data/experiences";
@@ -39,6 +40,7 @@ function Editor({ table }: { table: DiningTable }) {
     price: String(table.pricePerGuest),
     maxGuests: table.maxGuests,
     photos: table.photos,
+    dietTags: table.dietTags,
   });
   const [message, setMessage] = useState<{ tone: "ok" | "warn" | "error"; text: string } | null>(null);
   const set = <K extends keyof typeof draft>(key: K) => (value: (typeof draft)[K]) =>
@@ -83,6 +85,7 @@ function Editor({ table }: { table: DiningTable }) {
       pricePerGuest: price,
       maxGuests: draft.maxGuests,
       photos: draft.photos,
+      dietTags: draft.dietTags,
     });
     if ("error" in result) return setMessage({ tone: "error", text: result.error });
     // New photos are now stored URLs rather than the picked files.
@@ -120,8 +123,8 @@ function Editor({ table }: { table: DiningTable }) {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-serif text-2xl">Photos</h2>
-        <p className="text-sm text-ivory/60">The first photo is your cover. Use the arrows to change the order.</p>
+        <h2 className="font-serif text-2xl">Meal photos</h2>
+        <p className="text-sm text-ivory/60">Photos of the food. The first photo is your cover. Use the arrows to change the order.</p>
         <ul className="grid grid-cols-3 gap-2">
           {draft.photos.map((photo, index) => (
             <li key={photo.slice(-40) + index} className="relative aspect-square overflow-hidden rounded-xl bg-ivory/5">
@@ -161,6 +164,7 @@ function Editor({ table }: { table: DiningTable }) {
             ))}
           </div>
         </fieldset>
+        <DietTagPicker value={draft.dietTags} onChange={set("dietTags")} />
         <TextField id={f("story")} label="The story of this meal" multiline value={draft.story} onChange={set("story")} maxLength={600} />
         <TextField id={f("menu")} label="Dishes you usually serve" multiline value={draft.menu} onChange={set("menu")} maxLength={400} />
         <div className="grid grid-cols-2 gap-4">
@@ -245,7 +249,10 @@ export function HostTable() {
             <PageTitle kicker="My table" title={table?.title ?? "Your table"} />
             {table ? <Editor key={table.id} table={table} /> : <p className={`${cardClass} text-ivory/70`}>No table yet.</p>}
           </div>
+          <UpiForm key={`upi-${host.id}`} host={host} />
+          <VenueForm key={`venue-${host.id}`} host={host} />
           <MapSpot key={host.id} host={host} />
+          <VerificationUploads host={host} />
         </div>
       )}
     </HostGate>
