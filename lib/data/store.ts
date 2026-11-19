@@ -379,6 +379,15 @@ export function seatsLeft(_s: AppState, session: DiningSession) {
   return session.seatsTotal - session.seatsTaken;
 }
 
+// Milliseconds from now until a time; negative once it has passed.
+export function msUntil(iso: string) {
+  return new Date(iso).getTime() - Date.now();
+}
+
+export function nowMs() {
+  return Date.now();
+}
+
 export function hasStarted(iso: string) {
   return new Date(iso).getTime() <= Date.now();
 }

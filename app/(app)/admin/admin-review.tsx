@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   cardClass,
   focusRing,
@@ -15,8 +15,56 @@ import {
 } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
 import { findExploreCity } from "@/data/experiences";
-import { reviewHost, reviewTableChanges, upcomingSessions, useAppState } from "@/lib/data/store";
-import type { AppState, DiningTable, Host } from "@/lib/data/types";
+import {
+  loadHostDocuments,
+  openVerificationFile,
+  reviewHost,
+  reviewTableChanges,
+  upcomingSessions,
+  useAppState,
+  type HostDocument,
+} from "@/lib/data/store";
+import { dietLabel, type AppState, type DiningTable, type Host } from "@/lib/data/types";
+
+const documentLabel = { id: "Photo ID", fssai: "FSSAI registration", kitchen: "Kitchen photo" } as const;
+
+// Optional verification files, from the private bucket. Each link works for
+// five minutes.
+function Documents({ hostId }: { hostId: string }) {
+  const [docs, setDocs] = useState<HostDocument[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    void loadHostDocuments().then((all) => setDocs(all.filter((d) => d.hostId === hostId)));
+  }, [hostId]);
+  if (!docs) return null;
+  return (
+    <div className="text-sm">
+      <p className="text-ivory/50">Verification (private)</p>
+      {docs.length === 0 ? (
+        <p className="mt-0.5 text-ivory/70">None uploaded. They&rsquo;re optional.</p>
+      ) : (
+        <ul className="mt-1 flex flex-wrap gap-2">
+          {docs.map((d) => (
+            <li key={d.id}>
+              <button
+                type="button"
+                onClick={async () => {
+                  const url = await openVerificationFile(d.path);
+                  if (url) window.open(url, "_blank", "noopener");
+                  else setError("Couldn't open that file.");
+                }}
+                className={secondaryButtonClass}
+              >
+                {documentLabel[d.kind]}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && <p role="alert" className="mt-1 text-terracotta-soft">{error}</p>}
+    </div>
+  );
+}
 
 function Application({ state, host }: { state: AppState; host: Host }) {
   const uid = useId();
@@ -60,6 +108,10 @@ function Application({ state, host }: { state: AppState; host: Host }) {
               ["About", host.bio],
               ["Story", table.story],
               ["Menu", table.menu],
+              ["Diets", table.dietTags.map((t) => dietLabel[t]).join(", ") || "Not set"],
+              ["Home", [host.venueFloor, host.venueSeating, host.venueParking, host.venuePets].filter(Boolean).join(" · ") || "Not set"],
+              ["House rules", host.houseRules || "None"],
+              ["UPI ID", host.upiId || "Not set"],
               ["Languages", host.languages.join(", ")],
               ["Address", host.address],
               ["Phone", host.contactPhone],
@@ -71,6 +123,7 @@ function Application({ state, host }: { state: AppState; host: Host }) {
               </div>
             ))}
           </dl>
+          <Documents hostId={host.id} />
         </>
       )}
 

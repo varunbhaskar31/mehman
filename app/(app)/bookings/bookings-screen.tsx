@@ -26,6 +26,9 @@ import {
   addReview,
   bookingDetails,
   confirmRefund,
+  hasStarted,
+  msUntil,
+  nowMs,
   setBookingStatus,
   slotEnds,
   useAppState,
@@ -102,10 +105,10 @@ function TripCard({ state, booking }: { state: AppState; booking: Booking }) {
   const { session, table, host } = bookingDetails(state, booking);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const started = new Date(session.startsAt).getTime() <= Date.now();
+  const started = hasStarted(session.startsAt);
   const canCancel = cancellable.includes(booking.status) && !started;
   const depositAtStake = booking.status === "deposit_claimed" || booking.status === "confirmed";
-  const moreThanADay = new Date(session.startsAt).getTime() - Date.now() > 24 * 60 * 60 * 1000;
+  const moreThanADay = msUntil(session.startsAt) > 24 * 60 * 60 * 1000;
   const review = state.reviews.find((r) => r.bookingId === booking.id);
   const chatHref = `/messages?table=${table.id}&guest=${booking.guestId}`;
   const hostPhone = host.contactPhone.replace(/\s+/g, "");
@@ -268,7 +271,7 @@ export function BookingsScreen() {
             const { session } = bookingDetails(state, b);
             return { booking: b, when: session.startsAt, ends: slotEnds(session).getTime() };
           });
-        const now = Date.now();
+        const now = nowMs();
         const upcoming = mine
           .filter((x) => x.ends > now && live.includes(x.booking.status))
           .sort((a, b) => a.when.localeCompare(b.when));
