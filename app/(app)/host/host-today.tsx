@@ -14,11 +14,13 @@ import {
 import { primaryButtonClass } from "@/app/_components/fields";
 import {
   bookingDetails,
-  hasStarted,
   tableRating,
   upcomingSessions,
 } from "@/lib/data/store";
-import { bookingsForTable, HostGate } from "./host-shell";
+import { bookingsForTable, HostGate, needsGuestRating } from "./host-shell";
+import type { BookingStatus } from "@/lib/data/types";
+
+const isConfirmed = (status: BookingStatus) => status === "confirmed" || status === "accepted";
 
 export function HostToday() {
   const justSubmitted = useSearchParams().get("submitted") === "1";
@@ -28,15 +30,14 @@ export function HostToday() {
       {({ user, host, table, state }) => {
         const bookings = bookingsForTable(state, table?.id);
         const requests = bookings.filter((b) => b.status === "requested");
-        const toUpdate = bookings.filter(
-          (b) => b.status === "accepted" && hasStarted(bookingDetails(state, b).session.startsAt),
-        );
+        const toUpdate = bookings.filter((b) => needsGuestRating(state, b));
+        const depositsToCheck = bookings.filter((b) => b.status === "deposit_claimed");
         const nextSession = table
           ? upcomingSessions(state, table.id).find((s) =>
-              bookings.some((b) => b.sessionId === s.id && b.status === "accepted"),
+              bookings.some((b) => b.sessionId === s.id && isConfirmed(b.status)),
             )
           : undefined;
-        const nextGuests = bookings.filter((b) => b.sessionId === nextSession?.id && b.status === "accepted");
+        const nextGuests = bookings.filter((b) => b.sessionId === nextSession?.id && isConfirmed(b.status));
         const monthStart = new Date();
         monthStart.setDate(1);
         monthStart.setHours(0, 0, 0, 0);
@@ -84,17 +85,29 @@ export function HostToday() {
                   <span className="block font-medium">
                     {requests.length} {requests.length === 1 ? "guest is" : "guests are"} waiting for your reply
                   </span>
-                  <span className="block text-sm text-ivory/85">Reply within a day to keep your table high in search.</span>
+                  <span className="block text-sm text-ivory/85">Requests expire after 6 hours without a reply.</span>
+                </span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            )}
+
+            {depositsToCheck.length > 0 && (
+              <Link href="/host/requests" className={`flex items-center justify-between rounded-2xl bg-terracotta px-5 py-4 text-ivory ${focusRing}`}>
+                <span>
+                  <span className="block font-medium">
+                    {depositsToCheck.length} {depositsToCheck.length === 1 ? "deposit" : "deposits"} to check
+                  </span>
+                  <span className="block text-sm text-ivory/85">Look in your UPI app, then tap Deposit received.</span>
                 </span>
                 <span aria-hidden="true">→</span>
               </Link>
             )}
 
             {toUpdate.length > 0 && (
-              <Link href="/host/earnings" className={`block rounded-2xl border border-[#e8c08f]/40 px-5 py-4 ${focusRing}`}>
-                <span className="block font-medium text-[#e8c08f]">Did your guests come?</span>
+              <Link href="/host/requests" className={`block rounded-2xl border border-[#e8c08f]/40 px-5 py-4 ${focusRing}`}>
+                <span className="block font-medium text-[#e8c08f]">How were your guests?</span>
                 <span className="block text-sm text-ivory/70">
-                  Mark {toUpdate.length} past {toUpdate.length === 1 ? "booking" : "bookings"} as hosted or no-show.
+                  Rate {toUpdate.length} past {toUpdate.length === 1 ? "guest" : "guests"}, or mark a no-show within 24 hours.
                 </span>
               </Link>
             )}

@@ -47,6 +47,9 @@ export type ExploreCity = {
   coords: { lat: number; lng: number };
   // A welcome in the city's own language, shown as the city opens.
   greeting: { local: string; english: string };
+  // Takes bookings and host applications. The rest show "coming soon".
+  // Keep in step with cities.accepting in the database.
+  open: boolean;
 };
 
 const ccBySa = (version: string) => ({
@@ -245,38 +248,7 @@ export const exploreCities: ExploreCity[] = [
     thumbnail: bengaluruThumb,
     coords: { lat: 12.9716, lng: 77.5946 },
     greeting: { local: "Banni, oota maadi", english: "Come, have a meal" },
-  },
-  {
-    id: "kochi",
-    name: "Kochi",
-    aliases: ["cochin", "ernakulam"],
-    thumbnail: kochiThumb,
-    coords: { lat: 9.9312, lng: 76.2673 },
-    greeting: { local: "Swagatham", english: "Welcome" },
-  },
-  {
-    id: "lucknow",
-    name: "Lucknow",
-    aliases: [],
-    thumbnail: lucknowThumb,
-    coords: { lat: 26.8467, lng: 80.9462 },
-    greeting: { local: "Tashreef laaiye", english: "Please, come in" },
-  },
-  {
-    id: "jaipur",
-    name: "Jaipur",
-    aliases: [],
-    thumbnail: jaipurThumb,
-    coords: { lat: 26.9124, lng: 75.7873 },
-    greeting: { local: "Padharo mhare des", english: "Welcome to our land" },
-  },
-  {
-    id: "kolkata",
-    name: "Kolkata",
-    aliases: ["calcutta"],
-    thumbnail: kolkataThumb,
-    coords: { lat: 22.5726, lng: 88.3639 },
-    greeting: { local: "Esho, kheye jao", english: "Come, eat before you go" },
+    open: true,
   },
   {
     id: "hyderabad",
@@ -285,10 +257,49 @@ export const exploreCities: ExploreCity[] = [
     thumbnail: hyderabadThumb,
     coords: { lat: 17.385, lng: 78.4867 },
     greeting: { local: "Khush aamdeed", english: "Welcome" },
+    open: true,
+  },
+  {
+    id: "kochi",
+    name: "Kochi",
+    aliases: ["cochin", "ernakulam"],
+    thumbnail: kochiThumb,
+    coords: { lat: 9.9312, lng: 76.2673 },
+    greeting: { local: "Swagatham", english: "Welcome" },
+    open: false,
+  },
+  {
+    id: "lucknow",
+    name: "Lucknow",
+    aliases: [],
+    thumbnail: lucknowThumb,
+    coords: { lat: 26.8467, lng: 80.9462 },
+    greeting: { local: "Tashreef laaiye", english: "Please, come in" },
+    open: false,
+  },
+  {
+    id: "jaipur",
+    name: "Jaipur",
+    aliases: [],
+    thumbnail: jaipurThumb,
+    coords: { lat: 26.9124, lng: 75.7873 },
+    greeting: { local: "Padharo mhare des", english: "Welcome to our land" },
+    open: false,
+  },
+  {
+    id: "kolkata",
+    name: "Kolkata",
+    aliases: ["calcutta"],
+    thumbnail: kolkataThumb,
+    coords: { lat: 22.5726, lng: 88.3639 },
+    greeting: { local: "Esho, kheye jao", english: "Come, eat before you go" },
+    open: false,
   },
 ];
 
 export const defaultExploreCity = exploreCities[0];
+
+export const openCities = exploreCities.filter((city) => city.open);
 
 export function findExploreCity(id: string | null | undefined) {
   return exploreCities.find((city) => city.id === id);

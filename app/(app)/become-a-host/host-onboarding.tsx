@@ -14,7 +14,8 @@ import {
 import { AreaPicker } from "@/app/_components/area-picker";
 import { primaryButtonClass, SelectField, TextField } from "@/app/_components/fields";
 import type { LatLng } from "@/data/city-map";
-import { exploreCities } from "@/data/experiences";
+import { exploreCities, openCities } from "@/data/experiences";
+import { DietTagPicker, UPI_PATTERN, VenueFields } from "@/app/_components/host-details";
 import {
   applyAsHost,
   currentUser,
@@ -22,7 +23,8 @@ import {
   useAppReady,
   useAppState,
 } from "@/lib/data/store";
-import type { VegType } from "@/lib/data/types";
+import type { DietTag, VegType } from "@/lib/data/types";
+import type { VenueDetails } from "@/lib/data/store";
 import { resizePhoto } from "@/lib/photos";
 
 const LANGUAGES = ["Hindi", "English", "Bengali", "Kannada", "Malayalam", "Marathi", "Tamil", "Telugu", "Urdu", "Gujarati", "Punjabi", "Marwari"];
@@ -38,29 +40,35 @@ type Draft = {
   area: LatLng | null;
   address: string;
   contactPhone: string;
+  upiId: string;
+  venue: VenueDetails;
   title: string;
   cuisine: string;
   veg: VegType;
+  dietTags: DietTag[];
   story: string;
   menu: string;
   pricePerGuest: string;
   maxGuests: number;
   photos: string[];
-  dates: { startsAt: string; seats: number }[];
+  dates: { startsAt: string; seats: number; durationMinutes: 120 | 180 }[];
 };
 
 const emptyDraft: Draft = {
   displayName: "",
   bio: "",
   languages: [],
-  cityId: exploreCities[0].id,
+  cityId: openCities[0].id,
   locality: "",
   area: null,
   address: "",
   contactPhone: "",
+  upiId: "",
+  venue: { venueFloor: "", venueParking: "", venuePets: "", venueSeating: "", houseRules: "", homePhotos: [] },
   title: "",
   cuisine: "",
   veg: "veg",
+  dietTags: ["veg"],
   story: "",
   menu: "",
   pricePerGuest: "",
@@ -83,6 +91,7 @@ function validateStep(step: number, d: Draft): Errors {
     else if (!d.area) e.area = "We need to place your table on the map. Check your neighbourhood's spelling, or use your current location.";
     if (d.address.trim().length < 10) e.address = "Please enter your full address.";
     if (d.contactPhone.replace(/\D/g, "").length < 10) e.contactPhone = "Please enter a mobile number guests can reach on the day.";
+    if (!UPI_PATTERN.test(d.upiId.trim())) e.upiId = "Enter the UPI ID guests pay the deposit to, like name@okhdfcbank.";
   }
   if (step === 2) {
     if (d.title.trim().length < 5) e.title = "Name the meal you'll serve.";
@@ -91,6 +100,7 @@ function validateStep(step: number, d: Draft): Errors {
     if (d.menu.trim().length < 10) e.menu = "List the dishes you usually serve.";
     const price = Number(d.pricePerGuest);
     if (!Number.isInteger(price) || price < 100 || price > 50000) e.pricePerGuest = "Enter a price between ₹100 and ₹50,000.";
+    if (d.dietTags.length === 0) e.dietTags = "Pick at least one diet you cater for.";
   }
   if (step === 3 && d.photos.length === 0) e.photos = "Add at least one photo of your food or table.";
   if (step === 4 && d.dates.length === 0) e.dates = "Add at least one date you can host.";
@@ -115,6 +125,7 @@ export function HostOnboarding() {
   const [errors, setErrors] = useState<Errors>({});
   const [newDate, setNewDate] = useState("");
   const [newSeats, setNewSeats] = useState(6);
+  const [newDuration, setNewDuration] = useState<120 | 180>(180);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -150,7 +161,7 @@ export function HostOnboarding() {
           {[
             ["Tell us about your family and kitchen", "Your story, your city and the meal you love to serve."],
             ["We visit and review", "The Mehman team checks every home before it goes live, for guests' safety and yours."],
-            ["Welcome your first guests", "You choose the dates and accept each request. Guests pay you directly at the meal."],
+            ["Welcome your first guests", "You choose the dates and accept each request. Guests pay you a ₹500 deposit by UPI to confirm, and the rest at the meal."],
           ].map(([title, body], index) => (
             <li key={title} className="flex gap-4">
               <span className="grid size-9 shrink-0 place-items-center rounded-full border-2 border-[#e8c08f] font-serif text-[#e8c08f]">{index + 1}</span>
@@ -200,7 +211,7 @@ export function HostOnboarding() {
     if (when.getTime() <= Date.now()) return setErrors((e) => ({ ...e, newDate: "Pick a time in the future." }));
     setDraft((d) => ({
       ...d,
-      dates: [...d.dates, { startsAt: when.toISOString(), seats: Math.min(newSeats, d.maxGuests) }].sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+      dates: [...d.dates, { startsAt: when.toISOString(), seats: Math.min(newSeats, d.maxGuests), durationMinutes: newDuration }].sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
     }));
     setNewDate("");
     setErrors((e) => ({ ...e, newDate: undefined, dates: undefined }));
@@ -218,11 +229,14 @@ export function HostOnboarding() {
         locality: draft.locality.trim(),
         address: draft.address.trim(),
         contactPhone: draft.contactPhone.trim(),
+        upiId: draft.upiId.trim(),
+        ...draft.venue,
       },
       table: {
         title: draft.title.trim(),
         cuisine: draft.cuisine.trim(),
         veg: draft.veg,
+        dietTags: draft.dietTags,
         story: draft.story.trim(),
         menu: draft.menu.trim(),
         pricePerGuest: Number(draft.pricePerGuest),
@@ -285,11 +299,18 @@ export function HostOnboarding() {
 
         {step === 1 && (
           <>
-            <SelectField id={f("city")} label="City" value={draft.cityId} onChange={set("cityId")} options={exploreCities.map((c) => ({ id: c.id, name: c.name }))} />
+            <SelectField id={f("city")} label="City" value={draft.cityId} onChange={set("cityId")} options={openCities.map((c) => ({ id: c.id, name: c.name }))} />
+            <p className="-mt-4 text-sm text-ivory/50">Mehman is taking hosts in Bengaluru and Hyderabad first. Other cities are coming soon.</p>
             <TextField id={f("locality")} label="Neighbourhood" hint="Shown to guests, like Koramangala or Bani Park. Never your exact address." autoComplete="address-level3" value={draft.locality} onChange={set("locality")} error={errors.locality} maxLength={60} />
             <AreaPicker city={city} locality={draft.locality} area={draft.area} onChange={(area) => { setDraft((d) => ({ ...d, area })); if (area) setErrors((e) => ({ ...e, area: undefined })); }} error={errors.area} />
-            <TextField id={f("address")} label="Home address" hint="Private. Shared only with guests whose booking you accept." multiline value={draft.address} onChange={set("address")} error={errors.address} maxLength={300} />
+            <TextField id={f("address")} label="Home address" hint="Private. Shared only with guests once you confirm their deposit." multiline value={draft.address} onChange={set("address")} error={errors.address} maxLength={300} />
             <TextField id={f("contactPhone")} label="Mobile number for guests" hint="Private, same as your address." autoComplete="tel" value={draft.contactPhone} onChange={set("contactPhone")} error={errors.contactPhone} maxLength={20} />
+            <TextField id={f("upi")} label="UPI ID for deposits" hint="Private. Guests you accept pay a ₹500 deposit straight to it; Mehman never handles the money." value={draft.upiId} onChange={set("upiId")} error={errors.upiId} maxLength={120} />
+            <div className="space-y-1 pt-2">
+              <p className="font-serif text-xl">About your home</p>
+              <p className="text-sm text-ivory/55">Optional, and shown to guests. You can add these later too.</p>
+            </div>
+            <VenueFields value={draft.venue} onChange={set("venue")} />
           </>
         )}
 
@@ -308,13 +329,17 @@ export function HostOnboarding() {
                 ))}
               </div>
             </fieldset>
+            <div>
+              <DietTagPicker value={draft.dietTags} onChange={set("dietTags")} />
+              {errors.dietTags && <p className="mt-1.5 text-sm text-terracotta-soft">{errors.dietTags}</p>}
+            </div>
             <TextField id={f("story")} label="The story of this meal" multiline value={draft.story} onChange={set("story")} error={errors.story} maxLength={600} />
             <TextField id={f("menu")} label="Dishes you usually serve" hint="Separate with commas. It's fine if it changes with the season." multiline value={draft.menu} onChange={set("menu")} error={errors.menu} maxLength={400} />
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor={f("price")} className="text-sm text-ivory/80">Price per guest (₹)</label>
                 <input id={f("price")} inputMode="numeric" value={draft.pricePerGuest} onChange={(e) => set("pricePerGuest")(e.target.value.replace(/\D/g, ""))} aria-invalid={errors.pricePerGuest ? true : undefined} className={`mt-2 block w-full rounded-lg border bg-transparent px-4 py-3 text-base text-ivory focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ivory ${errors.pricePerGuest ? "border-terracotta-soft" : "border-ivory/25"}`} />
-                <p className="mt-1.5 text-xs text-ivory/50">Guests pay you this at the meal.</p>
+                <p className="mt-1.5 text-xs text-ivory/50">₹500 deposit by UPI, the rest at the meal.</p>
               </div>
               <div>
                 <p id={f("max")} className="text-sm text-ivory/80">Most guests at once</p>
@@ -370,6 +395,17 @@ export function HostOnboarding() {
                   <button type="button" aria-label="More seats" onClick={() => setNewSeats(Math.min(draft.maxGuests, newSeats + 1))} className={`grid size-10 place-items-center rounded-full border border-ivory/25 ${focusRing}`}>+</button>
                 </div>
               </div>
+              <div className="flex items-center justify-between gap-3">
+                <p id={f("length")} className="text-sm text-ivory/80">Length</p>
+                <div role="radiogroup" aria-labelledby={f("length")} className="flex gap-2">
+                  {([120, 180] as const).map((minutes) => (
+                    <button key={minutes} type="button" role="radio" aria-checked={newDuration === minutes} onClick={() => setNewDuration(minutes)} className={`min-h-11 rounded-full border px-4 text-sm ${focusRing} ${newDuration === minutes ? "border-[#e8c08f] bg-[#e8c08f]/15 text-[#e8c08f]" : "border-ivory/25 text-ivory/75"}`}>
+                      {minutes / 60} hours
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-ivory/50">Requests close 1 hour before the start.</p>
               {errors.newDate && <p className="text-sm text-terracotta-soft">{errors.newDate}</p>}
               <button type="button" onClick={addDate} className={secondaryButtonClass}>Add this date</button>
             </div>
@@ -377,7 +413,7 @@ export function HostOnboarding() {
               <ul className="space-y-2">
                 {draft.dates.map((date, index) => (
                   <li key={date.startsAt + index} className="flex items-center justify-between rounded-xl border border-ivory/15 px-4 py-3">
-                    <span>{formatWhen(date.startsAt)} · {date.seats} seats</span>
+                    <span>{formatWhen(date.startsAt)} · {date.durationMinutes / 60}h · {date.seats} seats</span>
                     <button type="button" onClick={() => set("dates")(draft.dates.filter((_, i) => i !== index))} className={`rounded text-sm text-ivory/60 underline ${focusRing}`}>Remove</button>
                   </li>
                 ))}
@@ -403,6 +439,7 @@ export function HostOnboarding() {
                 ["Dates", draft.dates.map((d) => formatWhen(d.startsAt)).join(" · ")],
                 ["Neighbourhood", draft.locality],
                 ["Address (private)", draft.address],
+                ["UPI ID (private)", draft.upiId],
               ].map(([term, value]) => (
                 <div key={term}>
                   <dt className="text-ivory/55">{term}</dt>
@@ -411,7 +448,7 @@ export function HostOnboarding() {
               ))}
             </dl>
             <p className="text-sm text-ivory/65">
-              Once you submit, the Mehman team will review your table and arrange a short visit. It goes live after approval.
+              Once you submit, the Mehman team will review your table and arrange a short visit. It goes live after approval. You can add your ID, FSSAI registration and kitchen photos under My table to speed this up.
             </p>
             {submitError && <p role="alert" className="text-sm text-terracotta-soft">{submitError}</p>}
           </div>

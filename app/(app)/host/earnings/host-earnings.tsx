@@ -10,9 +10,9 @@ import {
   StatusChip,
 } from "@/app/_components/app-ui";
 import { primaryButtonClass } from "@/app/_components/fields";
-import { bookingDetails, hasStarted, replyToReview, tableRating } from "@/lib/data/store";
+import { bookingDetails, replyToReview, tableRating } from "@/lib/data/store";
 import type { AppState, Review } from "@/lib/data/types";
-import { bookingsForTable, GuestBookingCard, HostGate } from "../host-shell";
+import { bookingsForTable, GuestBookingCard, HostGate, needsGuestRating } from "../host-shell";
 
 const monthLabel = new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric" });
 
@@ -59,9 +59,7 @@ export function HostEarnings() {
     <HostGate>
       {({ table, state }) => {
         const bookings = bookingsForTable(state, table?.id);
-        const toUpdate = bookings.filter(
-          (b) => b.status === "accepted" && hasStarted(bookingDetails(state, b).session.startsAt),
-        );
+        const toUpdate = bookings.filter((b) => needsGuestRating(state, b));
         const past = bookings
           .filter((b) => b.status === "completed" || b.status === "no_show")
           .sort((a, b) => bookingDetails(state, b).session.startsAt.localeCompare(bookingDetails(state, a).session.startsAt));
@@ -88,7 +86,7 @@ export function HostEarnings() {
 
             {toUpdate.length > 0 && (
               <section className="space-y-3">
-                <h2 className="font-serif text-2xl">Did your guests come?</h2>
+                <h2 className="font-serif text-2xl">Rate your guests</h2>
                 <ul className="space-y-3">{toUpdate.map((b) => <GuestBookingCard key={b.id} state={state} booking={b} />)}</ul>
               </section>
             )}
