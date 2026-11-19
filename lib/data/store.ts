@@ -498,6 +498,18 @@ export async function verifyLoginCode(login: Login, token: string): Promise<Resu
   return me ? { ok: true, value: me } : fail("Please log in again.");
 }
 
+// Demo accounts only: the demo database has email + password users so the
+// presenter doesn't wait for codes. Shown when NEXT_PUBLIC_DEMO_LOGIN=on.
+export async function signInWithPassword(email: string, password: string): Promise<Result<Profile>> {
+  const { error } = await db().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  if (error) {
+    return fail(error.status === 400 ? "That email and password don't match a demo account." : friendly(error));
+  }
+  await refresh();
+  const me = currentUser(state);
+  return me ? { ok: true, value: me } : fail("Please log in again.");
+}
+
 export async function signOut() {
   await db().auth.signOut();
   await refresh();
