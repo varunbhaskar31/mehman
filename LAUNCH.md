@@ -4,16 +4,30 @@ The app runs on Supabase: real accounts, real hosts, real bookings. There is
 no sample data any more. These steps need your logins, so they're done by
 hand.
 
-## 1. Supabase project — done
+## 1. Supabase project
 
-The project is **mehman** (`rlopcnjufynbqdutzstt`, South Asia (Mumbai)). All
-three files in `supabase/migrations` are applied, and the URL and publishable
-key are in `.env.local` and Netlify. After changing the schema or
-`supabase/config.toml`, push again:
+Mehman runs on a new, standalone project (`zsznyhmzsurbidmczuri`), starting
+fresh. The old project (`rlopcnjufynbqdutzstt`) is no longer used and was
+left untouched; `npm run db:push` refuses to run against it.
+
+The URL, publishable key, secret key and database connection string go in
+`.env.local` (see `.env.example`), and the URL and publishable key in
+Netlify. To apply new files in `supabase/migrations`:
 
 ```bash
-npx supabase db push        # new files in supabase/migrations
-npx supabase config push    # login-code email, sender, redirect URLs
+npm run db:push
+```
+
+Never run `npm run seed:demo` against this project: it creates fake hosts,
+guests and bookings. It only reads `.env.demo.local`, for a separate demo
+project.
+
+After changing `supabase/config.toml` (login email, sender, redirect URLs),
+link the new project and push the config:
+
+```bash
+npx supabase link --project-ref zsznyhmzsurbidmczuri
+npx supabase config push
 ```
 
 `config push` needs `SMTP_PASS` from `.env.local` loaded in the shell (see

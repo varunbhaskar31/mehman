@@ -6,7 +6,8 @@ production.
 
 ## Before the demo (once)
 
-1. Create the demo Supabase project (Mumbai region) and copy
+1. Create a **separate** demo Supabase project (Mumbai region; never the
+   live project in `.env.local`) and copy
    `.env.demo.example` to `.env.demo.local`. Fill in the URL, publishable
    key, secret key, database URL and a `DEMO_PASSWORD`.
 2. Apply the migrations and seed:

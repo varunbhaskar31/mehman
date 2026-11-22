@@ -1,13 +1,14 @@
-// Reads .env.demo.local: the separate demo Supabase project's keys. Refuses
-// to run against the production project.
+// Reads Supabase settings from an env file and refuses the old project
+// (rlopcnjufynbqdutzstt), which Mehman no longer uses.
+//   .env.local       the live project (npm run db:push)
+//   .env.demo.local  a separate demo project (npm run db:push:demo, seed:demo)
 import { existsSync, readFileSync } from "node:fs";
 
-export const PRODUCTION_REF = "rlopcnjufynbqdutzstt";
+export const OLD_PROJECT_REF = "rlopcnjufynbqdutzstt";
 
-export function demoEnv(required) {
-  const file = ".env.demo.local";
+export function loadEnv(file, required) {
   if (!existsSync(file)) {
-    throw new Error(`${file} is missing. Copy .env.demo.example to ${file} and fill in the demo project's keys.`);
+    throw new Error(`${file} is missing. See .env.example (live) or .env.demo.example (demo).`);
   }
   const env = {};
   for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
@@ -17,9 +18,12 @@ export function demoEnv(required) {
   for (const key of required) {
     if (!env[key]) throw new Error(`${key} is missing from ${file}.`);
   }
-  const all = JSON.stringify(env);
-  if (all.includes(PRODUCTION_REF)) {
-    throw new Error(`${file} points at the production project (${PRODUCTION_REF}). Use the demo project.`);
+  if (JSON.stringify(env).includes(OLD_PROJECT_REF)) {
+    throw new Error(`${file} points at the old project (${OLD_PROJECT_REF}). Use the new one.`);
   }
   return env;
+}
+
+export function demoEnv(required) {
+  return loadEnv(".env.demo.local", required);
 }
