@@ -26,8 +26,55 @@ import {
   useAppReady,
   useAppState,
 } from "@/lib/data/store";
+import { dietLabel, type DiningTable, type Host } from "@/lib/data/types";
 
 const vegLabel = { veg: "Vegetarian", non_veg: "Non-vegetarian", both: "Veg & non-veg" };
+
+function dietLine(table: DiningTable) {
+  return table.dietTags.length ? table.dietTags.map((tag) => dietLabel[tag]).join(" · ") : vegLabel[table.veg];
+}
+
+// The home itself, kept apart from the meal: floor, parking, pets, seating,
+// house rules and photos.
+function HomeSection({ host }: { host: Host }) {
+  const facts = [
+    ["Floor", host.venueFloor],
+    ["Parking", host.venueParking],
+    ["Pets", host.venuePets],
+    ["Seating", host.venueSeating],
+  ].filter(([, value]) => value);
+  if (!facts.length && !host.houseRules && !host.homePhotos.length) return null;
+  return (
+    <section className="md:border-t md:border-ivory/10 md:pt-8">
+      <h2 className="font-serif text-2xl">The home</h2>
+      {host.homePhotos.length > 0 && (
+        <ul className="no-scrollbar mt-3 flex snap-x gap-2 overflow-x-auto">
+          {host.homePhotos.map((photo, index) => (
+            <li key={photo} className="relative aspect-[4/3] w-[70%] shrink-0 snap-start overflow-hidden rounded-xl bg-ivory/5 sm:w-[45%]">
+              <Image src={photo} alt={`${host.displayName}'s home, photo ${index + 1}`} fill sizes="(min-width: 640px) 320px, 70vw" className="object-cover" />
+            </li>
+          ))}
+        </ul>
+      )}
+      {facts.length > 0 && (
+        <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          {facts.map(([term, value]) => (
+            <div key={term}>
+              <dt className="text-ivory/55">{term}</dt>
+              <dd className="text-ivory/85">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {host.houseRules && (
+        <>
+          <h3 className="mt-5 text-sm tracking-[0.15em] text-ivory/55 uppercase">House rules</h3>
+          <p className="mt-2 leading-relaxed whitespace-pre-line text-ivory/80">{host.houseRules}</p>
+        </>
+      )}
+    </section>
+  );
+}
 
 export function TableScreen({ tableId }: { tableId: string }) {
   const state = useAppState();
@@ -36,6 +83,7 @@ export function TableScreen({ tableId }: { tableId: string }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [party, setParty] = useState(2);
   const [note, setNote] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [requested, setRequested] = useState(false);
   const confirmRef = useRef<HTMLHeadingElement>(null);
@@ -69,11 +117,16 @@ export function TableScreen({ tableId }: { tableId: string }) {
   const maxParty = Math.min(selectedSeats, table.maxGuests);
   const partySize = Math.min(party, Math.max(1, maxParty));
   const loginHref = `/login?next=${encodeURIComponent(`/tables/${table.id}`)}`;
+  const cityOpen = city?.open ?? false;
+  const needsPhone = Boolean(user && !user.phone);
 
   async function submit() {
     setError(null);
     if (!selected) return setError("Please choose a date.");
-    const result = await requestBooking(selected.id, partySize, note);
+    if (needsPhone && phone.replace(/\D/g, "").length < 10) {
+      return setError("Add your WhatsApp number so we can set up your group.");
+    }
+    const result = await requestBooking(selected.id, partySize, note, needsPhone ? phone : undefined);
     if ("error" in result) return setError(result.error);
     setRequested(true);
     requestAnimationFrame(() => confirmRef.current?.focus());
@@ -88,7 +141,8 @@ export function TableScreen({ tableId }: { tableId: string }) {
             Your request is with {host.displayName}
           </h1>
           <p className="mx-auto mt-3 max-w-sm text-ivory/70">
-            {partySize} {partySize === 1 ? "seat" : "seats"} on {formatWhen(selected.startsAt)}. Hosts usually reply within a day. We&rsquo;ll share the address once they accept.
+            {partySize} {partySize === 1 ? "seat" : "seats"} on {formatWhen(selected.startsAt)}. {host.displayName} has 6 hours to
+            reply. If they accept, you&rsquo;ll pay a ₹500 deposit by UPI to confirm, and get the address.
           </p>
           <div className="mt-7 flex flex-col items-center gap-3">
             <Link href="/bookings" className={primaryButtonClass}>See my bookings</Link>
@@ -113,7 +167,9 @@ export function TableScreen({ tableId }: { tableId: string }) {
       {formatPrice(table.pricePerGuest * partySize)} <span className="text-sm font-normal text-ivory/60">for {partySize}</span>
     </p>
   );
-  const requestButton = user ? (
+  const requestButton = !cityOpen ? (
+    <span className={`${secondaryButtonClass} pointer-events-none`}>Bookings open soon</span>
+  ) : user ? (
     <button type="button" onClick={submit} className={primaryButtonClass}>Request a seat</button>
   ) : (
     <Link href={loginHref} className={primaryButtonClass}>Log in to request</Link>
@@ -137,7 +193,7 @@ export function TableScreen({ tableId }: { tableId: string }) {
             {rating.count > 0 && <span aria-hidden="true">·</span>}
             <span>{city?.name}</span>
             <span aria-hidden="true">·</span>
-            <span>{table.cuisine} · {vegLabel[table.veg]}</span>
+            <span>{table.cuisine} · {dietLine(table)}</span>
           </p>
         </div>
         {table.status === "approved" && <SaveButton tableId={table.id} title={table.title} variant="labelled" />}
@@ -158,12 +214,12 @@ export function TableScreen({ tableId }: { tableId: string }) {
           <header className="md:hidden">
             {table.status !== "approved" && <PendingNote />}
             <p className="text-xs tracking-[0.2em] text-terracotta-soft uppercase">
-              {table.cuisine} · {vegLabel[table.veg]}
+              {table.cuisine} · {dietLine(table)}
             </p>
             <h1 className="mt-1 font-serif text-3xl leading-tight">{table.title}</h1>
             {ratingLink && <div className="mt-1">{ratingLink}</div>}
             <p className="mt-2 text-lg">
-              {formatPrice(table.pricePerGuest)} <span className="text-sm text-ivory/60">per guest · pay your host at the meal (UPI or cash)</span>
+              {formatPrice(table.pricePerGuest)} <span className="text-sm text-ivory/60">per guest · ₹500 deposit by UPI once the host accepts, the rest at the meal</span>
             </p>
           </header>
           {table.status !== "approved" && (
@@ -207,6 +263,8 @@ export function TableScreen({ tableId }: { tableId: string }) {
             <p className="mt-2 leading-relaxed text-ivory/80">{table.menu}</p>
             <p className="mt-3 text-sm text-ivory/55">Up to {table.maxGuests} guests · Menus change with the season.</p>
           </section>
+
+          <HomeSection host={host} />
 
           {rating.count > 0 && (
             <section id="reviews" className={`scroll-mt-24 ${sectionRule}`}>
@@ -255,6 +313,9 @@ export function TableScreen({ tableId }: { tableId: string }) {
 
             <section aria-labelledby={`${uid}-dates`}>
               <h2 id={`${uid}-dates`} className="font-serif text-2xl md:font-sans md:text-xs md:font-medium md:tracking-[0.15em] md:text-ivory/60 md:uppercase">Choose a date</h2>
+              {!cityOpen && (
+                <p className="mt-2 text-ivory/65">Mehman opens in {city?.name ?? "this city"} soon. For now you can book in Bengaluru and Hyderabad.</p>
+              )}
               {sessions.length === 0 ? (
                 <p className="mt-2 text-ivory/65">No open dates right now. Check back soon.</p>
               ) : (
@@ -274,7 +335,10 @@ export function TableScreen({ tableId }: { tableId: string }) {
                             isSelected ? "border-[#e8c08f] bg-[#e8c08f]/10" : "border-ivory/15 hover:border-ivory/40"
                           }`}
                         >
-                          <span>{formatWhen(session.startsAt)}</span>
+                          <span>
+                            {formatWhen(session.startsAt)}
+                            <span className="text-ivory/55"> · {session.durationMinutes / 60}h</span>
+                          </span>
                           <span className="text-sm text-ivory/60">{full ? "Full" : `${left} left`}</span>
                         </button>
                       </li>
@@ -308,6 +372,22 @@ export function TableScreen({ tableId }: { tableId: string }) {
                     className="mt-2 block w-full rounded-2xl border border-ivory/25 bg-transparent px-4 py-3 text-base text-ivory placeholder:text-ivory/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ivory md:rounded-xl md:text-sm"
                   />
                 </div>
+                {needsPhone && (
+                  <div>
+                    <label htmlFor={`${uid}-phone`} className="text-sm text-ivory/80">Your WhatsApp number</label>
+                    <input
+                      id={`${uid}-phone`}
+                      type="tel"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      placeholder="+91 98765 43210"
+                      className="mt-2 block w-full rounded-2xl border border-ivory/25 bg-transparent px-4 py-3 text-base text-ivory placeholder:text-ivory/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ivory md:rounded-xl md:text-sm"
+                    />
+                    <p className="mt-1.5 text-xs text-ivory/50">The host sees it only after accepting. We use it for your WhatsApp group.</p>
+                  </div>
+                )}
               </section>
             )}
 
@@ -315,7 +395,7 @@ export function TableScreen({ tableId }: { tableId: string }) {
               <div className="hidden space-y-3 md:block">
                 <div className="[&>a]:w-full [&>button]:w-full">{requestButton}</div>
                 {error && <p role="alert" className="text-center text-sm text-terracotta-soft">{error}</p>}
-                <p className="text-center text-sm text-ivory/55">You won&rsquo;t pay now. Pay your host at the meal (UPI or cash).</p>
+                <p className="text-center text-sm text-ivory/55">Nothing to pay now. If the host accepts, you pay a ₹500 deposit by UPI to confirm, and the rest at the meal.</p>
                 <div className="flex items-center justify-between border-t border-ivory/10 pt-4">
                   <span className="text-ivory/75">
                     {formatPrice(table.pricePerGuest)} × {partySize} {partySize === 1 ? "guest" : "guests"}

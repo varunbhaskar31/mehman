@@ -37,8 +37,16 @@ export function formatPrice(rupees: number) {
 
 const statusStyles: Record<string, { label: string; className: string }> = {
   requested: { label: "Waiting for host", className: "bg-[#e8c08f]/15 text-[#e8c08f]" },
+  awaiting_deposit: { label: "Pay deposit", className: "bg-terracotta/25 text-ivory" },
+  deposit_claimed: { label: "Deposit sent", className: "bg-[#e8c08f]/15 text-[#e8c08f]" },
+  confirmed: { label: "Confirmed", className: "bg-[#8fc79a]/15 text-[#a9d9b1]" },
   accepted: { label: "Confirmed", className: "bg-[#8fc79a]/15 text-[#a9d9b1]" },
+  in_review: { label: "With Mehman team", className: "bg-[#e8c08f]/15 text-[#e8c08f]" },
   declined: { label: "Declined", className: "bg-ivory/10 text-ivory/60" },
+  expired: { label: "Expired", className: "bg-ivory/10 text-ivory/60" },
+  cancelled_unpaid: { label: "Cancelled · unpaid", className: "bg-ivory/10 text-ivory/60" },
+  host_cancelled: { label: "Host cancelled", className: "bg-terracotta/20 text-terracotta-soft" },
+  guest_cancelled: { label: "Cancelled", className: "bg-ivory/10 text-ivory/60" },
   cancelled: { label: "Cancelled", className: "bg-ivory/10 text-ivory/60" },
   completed: { label: "Hosted", className: "bg-ivory/10 text-ivory/75" },
   no_show: { label: "No-show", className: "bg-terracotta/20 text-terracotta-soft" },

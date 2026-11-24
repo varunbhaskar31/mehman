@@ -50,7 +50,7 @@ export default async function CityPage({
                     }`}
                   >
                     <Image src={option.thumbnail} alt="" sizes="40px" className="size-8 rounded-full object-cover md:size-9" />
-                    {option.name}
+                    {option.name}{!option.open && <span className="text-[10px] tracking-wide text-ivory/50 uppercase">Soon</span>}
                   </Link>
                 </li>
               );
@@ -77,7 +77,7 @@ export default async function CityPage({
         </header>
 
         <Suspense fallback={<div className="mt-8 h-64" aria-hidden="true" />}>
-          <CityTables cityId={city.id} cityName={city.name} />
+          <CityTables cityId={city.id} cityName={city.name} open={city.open} />
         </Suspense>
       </main>
     </div>

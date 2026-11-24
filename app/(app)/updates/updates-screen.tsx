@@ -27,7 +27,7 @@ function upcomingReminders(state: AppState) {
   const me = currentUser(state);
   if (!me) return [];
   return state.bookings
-    .filter((b) => b.status === "accepted")
+    .filter((b) => b.status === "confirmed" || b.status === "accepted")
     .map((b) => bookingDetails(state, b))
     .filter(({ session, booking, host }) => {
       const until = new Date(session.startsAt).getTime() - new Date().getTime();

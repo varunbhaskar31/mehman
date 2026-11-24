@@ -76,7 +76,7 @@ function CitySelect({
     >
       {exploreCities.map((option) => (
         <option key={option.id} value={option.id}>
-          {option.name}
+          {option.name}{option.open ? "" : " (coming soon)"}
         </option>
       ))}
       <option value={LOCATE}>Use my location</option>
@@ -420,6 +420,7 @@ export function ExploreScreen() {
                       className="explore-city-thumb"
                     />
                     <span className="explore-city-name">{option.name}</span>
+                    {!option.open && <span className="text-[10px] tracking-wide text-ivory/55 uppercase">Coming soon</span>}
                   </Link>
                 </li>
               );

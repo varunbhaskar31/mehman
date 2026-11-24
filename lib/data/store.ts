@@ -11,6 +11,10 @@ import type {
   ChatMessage,
   Conversation,
   BookingStatus,
+  DepositStatus,
+  DietTag,
+  GuestReview,
+  GuestSummary,
   DiningSession,
   DiningTable,
   Host,
@@ -34,6 +38,9 @@ const emptyState: AppState = {
   notifications: [],
   saved: [],
   conversations: [],
+  guestSummaries: [],
+  guestReviews: [],
+  demoMode: false,
 };
 
 let state: AppState = emptyState;
@@ -136,7 +143,7 @@ async function load(): Promise<AppState> {
   const { data: auth } = await supabase.auth.getSession();
   const uid = auth.session?.user.id ?? null;
 
-  const [profilesR, hostsR, privateR, tablesR, sessionsR, bookingsR, reviewsR, notesR, savedR, chatsR] =
+  const [profilesR, hostsR, privateR, tablesR, sessionsR, bookingsR, reviewsR, notesR, savedR, chatsR, guestReviewsR, settingsR] =
     await Promise.all([
       uid ? supabase.from("profiles").select("id, email, full_name, phone, role, created_at") : none,
       supabase.from("hosts").select("*"),
@@ -150,6 +157,9 @@ async function load(): Promise<AppState> {
         : none,
       uid ? supabase.from("saved_tables").select("*") : none,
       uid ? supabase.rpc("my_conversations") : none,
+      // Hosts and the team only; RLS returns nothing to guests.
+      uid ? supabase.from("guest_reviews").select("*") : none,
+      supabase.from("app_settings").select("demo_mode"),
     ]);
 
   const sessionRows = rows(sessionsR, "dates");
@@ -167,12 +177,25 @@ async function load(): Promise<AppState> {
   // other guests' bookings and profiles are private.
   const known = new Set(profiles.map((p) => p.id));
   const reviewerIds = [...new Set(reviewRows.map((r) => r.guest_id as string))].filter((id) => !known.has(id));
-  const [takenR, namesR] = await Promise.all([
+  const bookingRows = rows(bookingsR, "bookings");
+  const otherGuestBookings = bookingRows.filter((b) => b.guest_id !== uid).map((b) => b.id as string);
+  const [takenR, namesR, guestsR] = await Promise.all([
     sessionRows.length
       ? supabase.rpc("seats_taken", { p_session_ids: sessionRows.map((s) => s.id) })
       : none,
     reviewerIds.length ? supabase.rpc("reviewer_names", { p_ids: reviewerIds }) : none,
+    // First names and track records of guests on the host's requests;
+    // contact details come only once the host accepts.
+    otherGuestBookings.length ? supabase.rpc("booking_guests", { p_booking_ids: otherGuestBookings }) : none,
   ]);
+  const guestSummaries: GuestSummary[] = rows(guestsR, "guests").map((g) => ({
+    bookingId: g.booking_id as string,
+    guestId: g.guest_id as string,
+    firstName: g.first_name as string,
+    rating: g.rating == null ? null : Number(g.rating),
+    ratings: g.ratings as number,
+    noShows: g.no_shows as number,
+  }));
   const taken = new Map(rows(takenR, "seat counts").map((t) => [t.session_id as string, t.taken as number]));
   profiles = profiles.concat(
     rows(namesR, "reviewer names").map((n) => ({
@@ -184,6 +207,11 @@ async function load(): Promise<AppState> {
       createdAt: "",
     })),
   );
+  // Guests the host hasn't accepted yet appear by first name only.
+  for (const g of guestSummaries) {
+    if (profiles.some((p) => p.id === g.guestId)) continue;
+    profiles.push({ id: g.guestId, email: "", fullName: g.firstName, phone: "", role: "guest", createdAt: "" });
+  }
 
   const privateByHost = new Map(rows(privateR, "host contacts").map((p) => [p.host_id as string, p]));
 
@@ -198,6 +226,13 @@ async function load(): Promise<AppState> {
       languages: (h.languages as string[]) ?? [],
       address: (contact?.address as string | undefined) ?? "",
       contactPhone: (contact?.contact_phone as string | undefined) ?? "",
+      upiId: (contact?.upi_id as string | null | undefined) ?? "",
+      venueFloor: (h.venue_floor as string | null) ?? "",
+      venueParking: (h.venue_parking as string | null) ?? "",
+      venuePets: (h.venue_pets as string | null) ?? "",
+      venueSeating: (h.venue_seating as string | null) ?? "",
+      houseRules: (h.house_rules as string | null) ?? "",
+      homePhotos: (h.home_photo_paths as string[] | null) ?? [],
       locality: (h.locality as string | null) ?? undefined,
       area:
         h.area_lat != null && h.area_lng != null
@@ -220,6 +255,7 @@ async function load(): Promise<AppState> {
     pricePerGuest: t.price_per_guest_inr as number,
     maxGuests: t.max_guests as number,
     photos: (t.photo_paths as string[]) ?? [],
+    dietTags: (t.diet_tags as DietTag[] | null) ?? [],
     status: t.status as DiningTable["status"],
     reviewNote: (t.review_note as string | null) ?? null,
     createdAt: t.created_at as string,
@@ -230,10 +266,11 @@ async function load(): Promise<AppState> {
     tableId: s.table_id as string,
     startsAt: s.starts_at as string,
     seatsTotal: s.seats_total as number,
+    durationMinutes: (s.duration_minutes as number | null) ?? 180,
     seatsTaken: taken.get(s.id as string) ?? 0,
   }));
 
-  const bookings: Booking[] = rows(bookingsR, "bookings").map((b) => ({
+  const bookings: Booking[] = bookingRows.map((b) => ({
     id: b.id as string,
     sessionId: b.session_id as string,
     guestId: b.guest_id as string,
@@ -241,8 +278,25 @@ async function load(): Promise<AppState> {
     pricePerGuest: b.price_per_guest_inr as number,
     note: (b.note as string | null) ?? "",
     status: b.status as BookingStatus,
+    depositInr: (b.deposit_inr as number | null) ?? 0,
+    depositStatus: ((b.deposit_status as string | null) ?? "none") as DepositStatus,
+    acceptedAt: (b.accepted_at as string | null) ?? null,
+    depositClaimedAt: (b.deposit_claimed_at as string | null) ?? null,
+    confirmedAt: (b.confirmed_at as string | null) ?? null,
+    whatsappGroupAt: (b.whatsapp_group_at as string | null) ?? null,
     createdAt: b.created_at as string,
   }));
+
+  const guestReviews: GuestReview[] = rows(guestReviewsR, "guest reviews").map((g) => ({
+    id: g.id as string,
+    bookingId: g.booking_id as string,
+    guestId: g.guest_id as string,
+    hostId: g.host_id as string,
+    rating: g.rating as number,
+    text: g.body as string,
+    createdAt: g.created_at as string,
+  }));
+  const demoMode = Boolean(rows(settingsR, "settings")[0]?.demo_mode);
 
   const reviews: Review[] = reviewRows.map((r) => ({
     id: r.id as string,
@@ -284,7 +338,10 @@ async function load(): Promise<AppState> {
     unread: c.unread as boolean,
   }));
 
-  return { currentUserId: uid, profiles, hosts, tables, sessions, bookings, reviews, notifications, saved, conversations };
+  return {
+    currentUserId: uid, profiles, hosts, tables, sessions, bookings, reviews, notifications, saved, conversations,
+    guestSummaries, guestReviews, demoMode,
+  };
 }
 
 // ------------------------------------------------------------- changes
@@ -322,17 +379,34 @@ export function seatsLeft(_s: AppState, session: DiningSession) {
   return session.seatsTotal - session.seatsTaken;
 }
 
+// Milliseconds from now until a time; negative once it has passed.
+export function msUntil(iso: string) {
+  return new Date(iso).getTime() - Date.now();
+}
+
+export function nowMs() {
+  return Date.now();
+}
+
 export function hasStarted(iso: string) {
   return new Date(iso).getTime() <= Date.now();
 }
 
+// Requests for a slot close 1 hour before it starts.
+export const CLOSE_BEFORE_MS = 60 * 60 * 1000;
+
+export function slotClosed(session: DiningSession) {
+  return new Date(session.startsAt).getTime() - CLOSE_BEFORE_MS <= Date.now();
+}
+
+export function slotEnds(session: DiningSession) {
+  return new Date(new Date(session.startsAt).getTime() + session.durationMinutes * 60_000);
+}
+
+// Slots a guest can still ask for.
 export function upcomingSessions(s: AppState, tableId: string) {
-  const now = Date.now();
   return s.sessions
-    .filter(
-      (session) =>
-        session.tableId === tableId && new Date(session.startsAt).getTime() > now,
-    )
+    .filter((session) => session.tableId === tableId && !slotClosed(session))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 }
 
@@ -364,8 +438,11 @@ export function bookingDetails(s: AppState, booking: Booking) {
   const session = s.sessions.find((x) => x.id === booking.sessionId)!;
   const table = s.tables.find((x) => x.id === session.tableId)!;
   const host = s.hosts.find((x) => x.id === table.hostId)!;
-  const guest = s.profiles.find((x) => x.id === booking.guestId)!;
-  return { booking, session, table, host, guest };
+  const guest = s.profiles.find((x) => x.id === booking.guestId) ?? {
+    id: booking.guestId, email: "", fullName: "Guest", phone: "", role: "guest" as const, createdAt: "",
+  };
+  const summary = s.guestSummaries.find((g) => g.bookingId === booking.id) ?? null;
+  return { booking, session, table, host, guest, summary };
 }
 
 // Where each kind of person starts: hosts in hosting mode, the team in
@@ -415,6 +492,18 @@ export async function verifyLoginCode(login: Login, token: string): Promise<Resu
         ? "That code didn't work. Check it, or ask for a new one."
         : friendly(error),
     );
+  }
+  await refresh();
+  const me = currentUser(state);
+  return me ? { ok: true, value: me } : fail("Please log in again.");
+}
+
+// Demo accounts only: the demo database has email + password users so the
+// presenter doesn't wait for codes. Shown when NEXT_PUBLIC_DEMO_LOGIN=on.
+export async function signInWithPassword(email: string, password: string): Promise<Result<Profile>> {
+  const { error } = await db().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  if (error) {
+    return fail(error.status === 400 ? "That email and password don't match a demo account." : friendly(error));
   }
   await refresh();
   const me = currentUser(state);
@@ -471,12 +560,13 @@ async function uploadPhotos(photos: string[]): Promise<Result<string[]>> {
 // ------------------------------------------------------------- hosting
 
 export type HostApplication = {
-  host: Pick<Host, "cityId" | "displayName" | "bio" | "languages" | "address" | "contactPhone" | "locality">;
+  host: Pick<Host, "cityId" | "displayName" | "bio" | "languages" | "address" | "contactPhone" | "locality" | "upiId"> &
+    Partial<VenueDetails>;
   table: Pick<
     DiningTable,
-    "title" | "story" | "menu" | "cuisine" | "veg" | "pricePerGuest" | "maxGuests" | "photos"
+    "title" | "story" | "menu" | "cuisine" | "veg" | "pricePerGuest" | "maxGuests" | "photos" | "dietTags"
   >;
-  dates: { startsAt: string; seats: number }[];
+  dates: { startsAt: string; seats: number; durationMinutes?: number }[];
 };
 
 // Pins the host's neighbourhood on the map. The database moves the point a
@@ -500,6 +590,8 @@ export async function applyAsHost(
   if (hostForUser(state, state.currentUserId)) return fail("You've already applied to host.");
   const photos = await uploadPhotos(application.table.photos);
   if ("error" in photos) return photos;
+  const homePhotos = await uploadPhotos(application.host.homePhotos ?? []);
+  if ("error" in homePhotos) return homePhotos;
   const { host, table } = application;
   const result = await rpc<string>("apply_as_host", {
     p_host: {
@@ -510,6 +602,13 @@ export async function applyAsHost(
       address: host.address,
       contact_phone: host.contactPhone,
       locality: host.locality ?? "",
+      upi_id: host.upiId,
+      venue_floor: host.venueFloor ?? "",
+      venue_parking: host.venueParking ?? "",
+      venue_pets: host.venuePets ?? "",
+      venue_seating: host.venueSeating ?? "",
+      house_rules: host.houseRules ?? "",
+      home_photo_paths: homePhotos.value,
     },
     p_table: {
       title: table.title,
@@ -520,8 +619,13 @@ export async function applyAsHost(
       price_per_guest_inr: table.pricePerGuest,
       max_guests: table.maxGuests,
       photo_paths: photos.value,
+      diet_tags: table.dietTags,
     },
-    p_dates: application.dates.map((d) => ({ starts_at: d.startsAt, seats: d.seats })),
+    p_dates: application.dates.map((d) => ({
+      starts_at: d.startsAt,
+      seats: d.seats,
+      duration_minutes: d.durationMinutes ?? 180,
+    })),
   });
   if ("error" in result) return result;
   // The application is in either way; a missing pin can be added from
@@ -530,8 +634,8 @@ export async function applyAsHost(
   return { ok: true, value: undefined };
 }
 
-export function addSessions(tableId: string, startsAts: string[], seats: number) {
-  return rpc<number>("add_sessions", { p_table_id: tableId, p_starts: startsAts, p_seats: seats });
+export function addSessions(tableId: string, startsAts: string[], seats: number, minutes: 120 | 180 = 180) {
+  return rpc<number>("add_slots", { p_table_id: tableId, p_starts: startsAts, p_seats: seats, p_minutes: minutes });
 }
 
 export function removeSession(sessionId: string) {
@@ -551,7 +655,7 @@ export async function setOwnTablePaused(tableId: string, paused: boolean): Promi
 
 export type TableEdits = Pick<
   DiningTable,
-  "title" | "story" | "menu" | "cuisine" | "veg" | "pricePerGuest" | "maxGuests" | "photos"
+  "title" | "story" | "menu" | "cuisine" | "veg" | "pricePerGuest" | "maxGuests" | "photos" | "dietTags"
 >;
 
 // Wording changes go live straight away; a new price or new photos on a
@@ -573,6 +677,7 @@ export async function updateTable(
       price_per_guest_inr: edits.pricePerGuest,
       max_guests: edits.maxGuests,
       photo_paths: photos.value,
+      diet_tags: edits.dietTags,
     },
   });
   return "error" in result
@@ -599,12 +704,18 @@ export function reviewTableChanges(tableId: string, approve: boolean, note: stri
 
 // ------------------------------------------------------------ bookings
 
-export async function requestBooking(sessionId: string, partySize: number, note: string): Promise<Result<Booking>> {
+export async function requestBooking(
+  sessionId: string,
+  partySize: number,
+  note: string,
+  phone?: string,
+): Promise<Result<Booking>> {
   if (!currentUser(state)) return fail("Please log in to request a seat.");
   const result = await rpc<string>("request_booking", {
     p_session_id: sessionId,
     p_party_size: partySize,
     p_note: note,
+    p_phone: phone?.trim() || null,
   });
   if ("error" in result) return result;
   const booking = state.bookings.find((b) => b.id === result.value);
@@ -613,6 +724,207 @@ export async function requestBooking(sessionId: string, partySize: number, note:
 
 export function setBookingStatus(bookingId: string, next: BookingStatus) {
   return rpc("set_booking_status", { p_booking_id: bookingId, p_status: next });
+}
+
+// Where the guest sends the deposit, once the host has accepted.
+export async function loadBookingPayment(
+  bookingId: string,
+): Promise<{ upiId: string; payeeName: string; amount: number } | null> {
+  const { data, error } = await db().rpc("booking_payment", { p_booking_id: bookingId });
+  if (error) {
+    console.error("[payment]", error);
+    return null;
+  }
+  const row = (data as Row[] | null)?.[0];
+  return row?.upi_id
+    ? { upiId: row.upi_id as string, payeeName: row.payee_name as string, amount: row.amount_inr as number }
+    : null;
+}
+
+export function confirmRefund(bookingId: string) {
+  return rpc("confirm_refund", { p_booking_id: bookingId });
+}
+
+export async function addGuestReview(bookingId: string, rating: number, text: string): Promise<Result> {
+  const result = await rpc<string>("add_guest_review", { p_booking_id: bookingId, p_rating: rating, p_text: text });
+  return "error" in result ? result : { ok: true, value: undefined };
+}
+
+// The host's UPI ID, kept in their private details.
+export async function updateMyUpi(hostId: string, upiId: string): Promise<Result> {
+  const { error } = await db().from("host_private").update({ upi_id: upiId.trim() || null }).eq("host_id", hostId);
+  if (error) {
+    return fail(error.code === "23514" ? "That UPI ID doesn't look right. It looks like name@bank." : friendly(error));
+  }
+  await refresh();
+  return { ok: true, value: undefined };
+}
+
+export type VenueDetails = Pick<
+  Host,
+  "venueFloor" | "venueParking" | "venuePets" | "venueSeating" | "houseRules" | "homePhotos"
+>;
+
+export async function updateMyVenue(hostId: string, venue: VenueDetails): Promise<Result> {
+  const photos = await uploadPhotos(venue.homePhotos);
+  if ("error" in photos) return photos;
+  const { error } = await db()
+    .from("hosts")
+    .update({
+      venue_floor: venue.venueFloor.trim() || null,
+      venue_parking: venue.venueParking.trim() || null,
+      venue_pets: venue.venuePets.trim() || null,
+      venue_seating: venue.venueSeating.trim() || null,
+      house_rules: venue.houseRules.trim() || null,
+      home_photo_paths: photos.value,
+    })
+    .eq("id", hostId);
+  if (error) return fail(friendly(error));
+  await refresh();
+  return { ok: true, value: undefined };
+}
+
+export type DocumentKind = "id" | "fssai" | "kitchen";
+
+// Optional verification files go to a private bucket only the team can open.
+export async function uploadVerification(hostId: string, kind: DocumentKind, file: File): Promise<Result> {
+  const me = state.currentUserId;
+  if (!me) return fail("Please log in again.");
+  if (file.size > 5 * 1024 * 1024) return fail("Please pick a file under 5 MB.");
+  const types: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "application/pdf": "pdf",
+  };
+  const extension = types[file.type];
+  if (!extension) return fail("Please pick a photo or a PDF.");
+  const path = `${me}/${kind}-${crypto.randomUUID()}.${extension}`;
+  const { error } = await db()
+    .storage.from("host-verification")
+    .upload(path, await file.arrayBuffer(), { contentType: file.type });
+  if (error) {
+    console.error("[verification]", error);
+    return fail("That file didn't upload. Check your connection and try again.");
+  }
+  const { error: listError } = await db().from("host_documents").insert({ host_id: hostId, kind, path });
+  if (listError) return fail(friendly(listError));
+  return { ok: true, value: undefined };
+}
+
+export type HostDocument = { id: string; hostId: string; kind: DocumentKind; path: string; createdAt: string };
+
+export async function loadHostDocuments(): Promise<HostDocument[]> {
+  const { data, error } = await db().from("host_documents").select("*").order("created_at", { ascending: false });
+  if (error) {
+    console.error("[verification]", error);
+    return [];
+  }
+  return (data as Row[]).map((d) => ({
+    id: d.id as string,
+    hostId: d.host_id as string,
+    kind: d.kind as DocumentKind,
+    path: d.path as string,
+    createdAt: d.created_at as string,
+  }));
+}
+
+// A link that works for five minutes, for the team to open a private file.
+export async function openVerificationFile(path: string): Promise<string | null> {
+  const { data, error } = await db().storage.from("host-verification").createSignedUrl(path, 300);
+  if (error) {
+    console.error("[verification]", error);
+    return null;
+  }
+  return data.signedUrl;
+}
+
+// ---------------------------------------------------------- team actions
+
+export function adminUpdateBooking(
+  bookingId: string,
+  status: BookingStatus | null,
+  depositStatus: DepositStatus | null,
+  note: string,
+) {
+  return rpc("admin_update_booking", {
+    p_booking_id: bookingId,
+    p_status: status,
+    p_deposit_status: depositStatus,
+    p_note: note,
+  });
+}
+
+export type BookingNote = { id: string; bookingId: string; body: string; createdAt: string };
+
+export async function loadBookingNotes(): Promise<BookingNote[]> {
+  const { data, error } = await db().from("booking_notes").select("*").order("created_at", { ascending: false });
+  if (error) {
+    console.error("[notes]", error);
+    return [];
+  }
+  return (data as Row[]).map((n) => ({
+    id: n.id as string,
+    bookingId: n.booking_id as string,
+    body: n.body as string,
+    createdAt: n.created_at as string,
+  }));
+}
+
+export type GroupToCreate = {
+  bookingId: string;
+  groupName: string;
+  tableTitle: string;
+  startsAt: string;
+  partySize: number;
+  hostName: string;
+  hostPhone: string;
+  guestName: string;
+  guestPhone: string;
+  guestEmail: string;
+};
+
+export async function loadWhatsappQueue(): Promise<GroupToCreate[]> {
+  const { data, error } = await db().rpc("admin_whatsapp_queue");
+  if (error) {
+    console.error("[whatsapp]", error);
+    return [];
+  }
+  return (data as Row[]).map((g) => ({
+    bookingId: g.booking_id as string,
+    groupName: g.group_name as string,
+    tableTitle: g.table_title as string,
+    startsAt: g.starts_at as string,
+    partySize: g.party_size as number,
+    hostName: g.host_name as string,
+    hostPhone: (g.host_phone as string | null) ?? "",
+    guestName: g.guest_name as string,
+    guestPhone: (g.guest_phone as string | null) ?? "",
+    guestEmail: (g.guest_email as string | null) ?? "",
+  }));
+}
+
+export function markWhatsappGroupCreated(bookingId: string) {
+  return rpc("mark_whatsapp_group_created", { p_booking_id: bookingId });
+}
+
+export type TimerRun = { expired: number; cancelledUnpaid: number; toReview: number; completed: number };
+
+// Runs the booking timers now. In demo mode the team can run them as if it
+// were some hours later.
+export async function runTimers(hoursAhead = 0): Promise<Result<TimerRun>> {
+  const result = await rpc<Row[]>("run_booking_timers", { p_hours_ahead: hoursAhead });
+  if ("error" in result) return result;
+  const row = result.value?.[0] ?? {};
+  return {
+    ok: true,
+    value: {
+      expired: (row.expired as number) ?? 0,
+      cancelledUnpaid: (row.cancelled_unpaid as number) ?? 0,
+      toReview: (row.to_review as number) ?? 0,
+      completed: (row.completed as number) ?? 0,
+    },
+  };
 }
 
 export async function addReview(bookingId: string, rating: number, text: string): Promise<Result> {

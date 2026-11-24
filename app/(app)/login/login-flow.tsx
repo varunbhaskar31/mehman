@@ -6,7 +6,16 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { focusRing } from "@/app/_components/app-ui";
 import { isValidEmail, primaryButtonClass } from "@/app/_components/fields";
 import { MehmanLogo } from "@/app/_components/mehman-logo";
-import { sendLoginCode, signInWithGoogle, updateProfile, verifyLoginCode, type Login } from "@/lib/data/store";
+import {
+  homeFor,
+  sendLoginCode,
+  signInWithGoogle,
+  signInWithPassword,
+  updateProfile,
+  useAppState,
+  verifyLoginCode,
+  type Login,
+} from "@/lib/data/store";
 
 type Method = "email" | "phone";
 type Step =
@@ -17,6 +26,10 @@ type Step =
 // Texting codes to Indian numbers needs an SMS provider with DLT
 // registration; the Phone option appears once that's set up in Supabase.
 const phoneLogin = process.env.NEXT_PUBLIC_PHONE_LOGIN === "on";
+
+// The demo database's guest, host and team accounts sign in with a
+// password, so the presenter never waits for an email.
+const demoLogin = process.env.NEXT_PUBLIC_DEMO_LOGIN === "on";
 
 const inputClass =
   "mt-2 block h-14 w-full rounded-full bg-[#f7efdd] px-6 text-lg text-[#1c1a17] placeholder:text-[#1c1a17]/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ivory";
@@ -48,6 +61,8 @@ export function LoginFlow() {
     params.get("error") === "google" ? "Google sign-in didn't finish. Please try again." : null,
   );
   const [busy, setBusy] = useState(false);
+  const [password, setPassword] = useState("");
+  const state = useAppState();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   // Move focus to each new step's heading for screen readers.
@@ -72,6 +87,17 @@ export function LoginFlow() {
       setBusy(false);
       setError(result.error);
     }
+  }
+
+  async function demoSignIn(event: FormEvent) {
+    event.preventDefault();
+    if (!isValidEmail(value)) return setError("Enter the demo account's email.");
+    setError(null);
+    setBusy(true);
+    const result = await signInWithPassword(value, password);
+    setBusy(false);
+    if ("error" in result) return setError(result.error);
+    router.replace(params.get("next") ? next : homeFor(state, result.value.id));
   }
 
   const loginFor = (m: Method, destination: string): Login =>
@@ -203,6 +229,25 @@ export function LoginFlow() {
               {busy ? "Sending…" : "Send me a code"}
             </button>
           </form>
+
+          {demoLogin && (
+            <form noValidate onSubmit={demoSignIn} className="mt-8 rounded-2xl border border-dashed border-ivory/25 p-4">
+              <p className="text-sm text-ivory/70">Demo account? Use the email above and its password.</p>
+              <label htmlFor={`${uid}-password`} className="sr-only">Password</label>
+              <input
+                id={`${uid}-password`}
+                type="password"
+                autoComplete="current-password"
+                placeholder="Password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className={inputClass}
+              />
+              <button type="submit" disabled={busy} className={`${primaryButtonClass} mt-3 w-full`}>
+                Sign in to the demo
+              </button>
+            </form>
+          )}
         </div>
       )}
 

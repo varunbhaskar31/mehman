@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Serif_Display, Kalam } from "next/font/google";
 import "./globals.css";
+import { PwaSetup } from "./_components/pwa";
 
 const serif = DM_Serif_Display({
   variable: "--font-dm-serif",
@@ -23,12 +24,18 @@ const handwriting = Kalam({
 });
 
 const description =
-  "Home-cooked meals with Indian families in Bengaluru, Kochi, Lucknow, Jaipur, Kolkata and Hyderabad. Come hungry, leave with stories.";
+  "Home-cooked meals with Indian families in Bengaluru and Hyderabad. Come hungry, leave with stories.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.URL ?? "https://mehman-home-dining.netlify.app"),
   title: "Mehman · Eat at a family's table",
   description,
+  applicationName: "Mehman",
+  appleWebApp: { capable: true, title: "Mehman", statusBarStyle: "black-translucent" },
+  icons: {
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
   openGraph: {
     title: "Mehman · Eat at a family's table",
     description,
@@ -51,7 +58,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${serif.variable} ${ctaSans.variable} ${handwriting.variable} antialiased`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <PwaSetup />
+      </body>
     </html>
   );
 }
